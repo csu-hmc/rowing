@@ -2,7 +2,11 @@ function mytest
 % runs a forward dynamic simulation of the rower model to test the dynamics code
 	global model
     [~,~,~, model.parameters] = datainterp2;
-    y0 = [ pi/180*[10  ;120; 70; 70; 80; 10];  5   ; 0; 0; 0; 0;0; 0];   % initial condition
+	
+	% choose a suitable initial condition: realistic joint angles, and choose flywheel position y(1)
+	% to be equal to the L that comes from these joint angles
+	% and make all velocities zero
+    y0 = [ 0.1 ; pi/180*[120; 70; 70; 80; 10];  0   ; 0; 0; 0; 0;0; 0];   % initial condition
     yp0 = zeros(13,1);			                        % initial guess for state derivatives at t=0
     fixed_y0 = [0 1 1 1 1 1 1 0 0 0 0 0 0];
     fixed_yp0 = [];
@@ -52,21 +56,20 @@ function f =  dyn(t,y, ydot)
 % dynamics of the rower model, in implicit form f(y,ydot,t) = 0
 % where y is (q,qdot)
 	global model
-    c =  model.parameters.C;
-	m =  model.parameters.m ;
-    K =  model.parameters.K;   % shock cord stiffness
-    L0 = model.parameters.L0;  % the wrist-sprocket distance when shock cord has zero force
-    Kcrm = model.parameters.Kcrm; % chain rachet mechanism stiffness
-	f = zeros(13,1);		% f will be a 13x1 matrix
-
-    % extract q, qdot, qdotdot from y and ydot
-    q = y(2:6);     
-    qd = y(8:12);
-    qdd = ydot(8:12);
+	
+	% you can try stuff like this:
+	model.parameters.Kcrm = 0;		% make the cable disappear
+   
 	% generate joint torques with a PD controller
-    % controller is turned on at t=0.5 s
-	qsetpoint = [120; 70; 70; 80; 10] * pi/180;		
-	if t < 0.5                                         
+    % controller is turned on at tstart
+	% simulation 1: tstart = 10, model should just fall down
+	% simulation 2, use initial angles as the setpoint, and tstart = 0
+	% simulation 3, use a leaning back setpoint, to make the human pull
+	% simulation 4, use tstart = 0.5, model should fall down and come back up
+	qsetpoint = [120; 70; 70; 80; 10] * pi/180;	
+
+	tstart = 0;
+	if t < tstart                                         
 		kp = 0;
 		kd = 0;
 	else
@@ -75,7 +78,7 @@ function f =  dyn(t,y, ydot)
 	end
 	tau = -kp*(q-qsetpoint) - kd*qd;
 	
-    f = dynfun(y,ydot,tau);
+    [f,~,~,~,L] = dynfun(y,ydot,tau);
     
 end
 %=======================================================================
