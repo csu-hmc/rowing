@@ -40,8 +40,8 @@ function animate(q, par)
         writeVideo(vidObj,currFrame);
         pause(0)
     end
-    
 % Close the file.
-    close(vidObj);
+ close(vidObj);
+     
     
 end

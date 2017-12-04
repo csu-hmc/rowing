@@ -6,11 +6,11 @@
     
     global model 
     
-	% copy parameter values into variables with meaningful (check them out!)
+	% copy parameter values into variables with meaningful
     c =  model.parameters.C;
 	m =  model.parameters.m ;
-    K =  model.parameters.K;   % shock cord stiffness
-    L0 = model.parameters.L0;  % the wrist-sprocket distance when shock cord has zero force
+    K =  model.parameters.K;      % shock cord stiffness
+    L0 = model.parameters.L0;     % the wrist-sprocket distance when shock cord has zero force
     Kcrm = model.parameters.Kcrm; % chain rachet mechanism stiffness
 
     f = zeros(13,1);
@@ -53,42 +53,27 @@
     % flywheel dynamics, flywheel sees cable force, minus the shock cord
     % force
     L = z(6);
-    
-    
     dLdq = dz_dq(6,:);
     
-
-
-%     f(7) = (m * xdot(7) + c*x(7)*abs(x(7))) - (x(13) - K*(L)); % x(7):velocity of the flyhweel ==> xdot(7): acceleration of the flywheel, m*xdot(7)--> intertia, c*x(7)^2--> damping, x(13): amount of flywheel motion
-%     dfdx(7,7) = 2*c*abs(x(7));
-%     dfdx(7,13) = -1;
-%     dfdxdot(7,7) = m;
-%     dfdx(7, 2:6) = K*dLdq;
-    
-    f(7) = (m * xdot(7) + c*x(7)*abs(x(7))) - (x(13) - K*(L-L0)); % x(7):velocity of the flyhweel ==> xdot(7): acceleration of the flywheel, m*xdot(7)--> intertia, c*x(7)^2--> damping, x(13): amount of flywheel motion
+    % dynamics of the flywheel
+    % m*a - Fdamping - Fcrm = 0
+    % or m*a - Fdamping - (Ftotal - Fshockcord) = 0
+    f(7) = m * xdot(7) + c*x(7)*abs(x(7)) - (x(13) - K*(L-L0)); % x(7):velocity of the flyhweel ==> xdot(7): acceleration of the flywheel, m*xdot(7)--> intertia, c*x(7)^2--> damping, x(13): amount of flywheel motion
     dfdx(7,7) = 2*c*abs(x(7));
     dfdx(7,13) = -1;
     dfdxdot(7,7) = m;
     dfdx(7, 2:6) = K*dLdq;
 
-% cable force must be equal to cable ratchet force + shock cord force
-%     f(13) = 0.5*Kcrm * (L - x(1) - abs(L-x(1)) ) - (x(13)-K*(L-L0)); % f is in N 
-%     dfdx(13, 13) = -1;
-%     if (L-x(1)) < 0
-%         dfdx(13, 1)   = -Kcrm;
-%         dfdx(13, 2:6) = (K+Kcrm)*dLdq;
-%     else
-%         dfdx(13, 2:6) = K*dLdq;
-%     end
-
-    f(13) = Kcrm * (L - x(1)) - (x(13)-K*(L-L0)); % f is in N 
-    dfdx(13, 13) = -1;
-    dfdx(13, 1)   = -Kcrm;
-    dfdx(13, 2:6) = (Kcrm+K)*dLdq;
-
-% 
-%     dfdx(13, 13) = -1;
-%     dfdx(13, 1)   = 0;
-%     dfdx(13, 2:6) = 0.5*(Kcrm)*dLdq;
+    %cable force must be equal to cable ratchet force + shock cord force
+    %use epsilon for non-linear spring to remove the non-linearity in the
+    %derivatives
+    epsilon = 0.000001;
+    Fsc= Kcrm * (L - x(1) );
+    Fcrm = (Fsc + sqrt(Fsc^2+epsilon^2))/2  ;
+    dFcrmdFsc = (1+Fsc/sqrt(Fsc^2+epsilon^2))/2; 
+    f(13) = x(13) - Fcrm - K*(L - L0);
+    dfdx(13,13) = 1;
+    dfdx(13,1) = Kcrm*dFcrmdFsc;
+    dfdx(13,2:6) = -(dFcrmdFsc*Kcrm + K)*dLdq;
     
 end
