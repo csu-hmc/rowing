@@ -17,6 +17,7 @@ function result = optimize(problem)
    % decode the problem
     N = problem.N;      % number of collocation points
     model.N = N;
+    model.tracking = problem.tracking;
     model.Wtrack  = problem.Wtrack; 
     model.Weffort = problem.Weffort;
     model.h = T/(N-1);    % time step for direct collocation
@@ -33,12 +34,32 @@ function result = optimize(problem)
     fwveldata = dSPACEdata(:,2);
     forcedata = dSPACEdata(:,3);
     
-
+    plot(qdata*180/pi)
+    title('joint angles')
+    legend('q1','q2','q3','q4','q5');
     % store the tracking data in global variables
     model.time =  tdc;
-    model.data = [qdata fwveldata forcedata];   % add mocap data (angles) as extra columns
+%     model.data = [qdata fwveldata forcedata];   % add mocap data (angles) as extra columns
+    if model.tracking == 1
+        model.data = [qdata];   % add mocap data (angles) as extra columns
+    elseif  model.tracking == 2
+        model.data = [forcedata];   % add mocap data (angles) as extra columns
+    else
+         model.data = [qdata fwveldata forcedata];   % add mocap data (angles) as extra columns
+        % model.data = [qdata forcedata];   % add mocap data (angles) as extra columns
+    end
+    
  	model.dataSD = std(model.data);
-    model.itrack = [2 3 4 5 6 7 13];       % the state variables to track (model.itrack=problem.irack so it should go to the script) 
+    
+    if model.tracking == 1
+       model.itrack = [2 3 4 5 6];       % the state variables to track (model.itrack=problem.irack so it should go to the script)
+    elseif    model.tracking == 2
+        model.itrack = [13];       % the state variables to track (model.itrack=problem.irack so it should go to the script)
+    else
+       model.itrack = [2 3 4 5 6 7 13];
+
+    end
+
     model.ntrack = numel(model.itrack);
      
     model.discretization = problem.discretization;  % Backward Euler(BE) or Midpoint Euler(ME) discretization
@@ -53,16 +74,24 @@ function result = optimize(problem)
     model.nx = 13;
     model.nu = 5;
 
-    x_lb = [0    0     -2*pi    0   -pi/2       0   0  -10 -10 -10 -10 -10  0]';
-    x_ub = [10  2*pi   2*pi  2*pi   pi/3      2*pi  2  20  20  20  20  20  500 ]';
-    u_lb = [-700; -700 ;-700 ;-700 ;-700];
-    u_ub =  [700 ;700 ;700 ;700 ;700];
+    %before scaling:
+    % x_lb = [0    0     -2*pi    0   -pi/2       0   0  -10 -10 -10 -10 -10  0]';
+    % x_ub = [3  2*pi   2*pi  2*pi   pi/3      2*pi  20  20  20  20  20  20  500 ]';
+    % u_lb = [-700; -700 ;-700 ;-700 ;-700];
+    % u_ub =  [700 ;700 ;700 ;700 ;700];
+
+    % when scaled
+   x_lb = [0    0     -2*pi    0   -pi/2       0   0  -20 -10 -10 -10 -10  0]';
+    x_ub = [3  2*pi   2*pi  2*pi   pi/3      2*pi  20  20  20  20  20  20  5 ]'; 
+    u_lb = [-700; -700 ;-700 ;-700 ;-700]/1000;
+    u_ub =  [700 ;700 ;700 ;700 ;700]/1000;
     % make bounds for the trajectory optimization problem
     X_lb = [repmat([x_lb ; u_lb], N, 1)];
     X_ub = [repmat([x_ub ; u_ub], N, 1)];
-    
+
     % all variables, except flywheel position, must be periodic 
     model.iper = 2:model.nx;  		
+
     model.nper = numel(model.iper);
 
    	% collocation grid and unknowns
@@ -76,7 +105,7 @@ function result = optimize(problem)
     % if oldresult was provided, use it as initial guess, otherwise use data as initial guess
     if isfield(problem,'initialguess')
         if (numel(problem.initialguess) == model.Nvar)
-            X0 = problem.initialguess.X;
+            X0 = problem.initialguess;
         else
             error('initial guess did not have the same N');
             % resampling to N nodes, to be written
@@ -152,8 +181,6 @@ function [f] = objfun(X)
         y  = X(iy);
         ymeas  = model.data(i,:)';% node i
         f1 = f1 + mean(((y - ymeas)./model.dataSD').^2);  % y has 7 variables. this is the best way to write the cost function      
-%         f1 = f1 + mean(((y - ymeas)).^2);  % y has 7 variables. this is the best way to write the cost function      
-
         ix = ix + model.Nvarpernode;
     end
     f1 = f1/(model.N-1);
@@ -167,13 +194,9 @@ function [f] = objfun(X)
         iu = iu + model.Nvarpernode;
     end
     f2 = f2/(model.N-1);
-
-     % using two for loops make it more readable
-     % if we wanna do predictive (only have effort) we make the first weight (tracking)=0 
-%     f = model.Wtrack * (f1(1)+f1(2)+f1(3)+f1(4)+f1(5)+f1(6)+f1(7))/model.ntrack + model.Weffort * f2;
+    % if we wanna do predictive (only have effort) we make the first weight (tracking)=0 
     f = model.Wtrack * f1 + model.Weffort * f2;
 
-    
     % a short pause to make sure that IPOPT screen output appears
     % continuously (if print_level was set accordingly)
     pause(1e-6);	
@@ -194,23 +217,21 @@ function [g] = objgrad(X)
         ymeas  = model.data(i,:)';
         % f1 = f1 + mean(((y - ymeas)./model.dataSD).^2); 
         g(iy) = g(iy) + model.Wtrack * 2*(y-ymeas)./(model.dataSD'.^2);
-%         g(iy) = g(iy) + model.Wtrack * 2*(y-ymeas);
+        %g(iy) = g(iy) + model.Wtrack * 2*(y-ymeas);
 
-         g(iy) = g(iy)/(model.N-1)/model.ntrack;
- %       g(iy) = g(iy)/model.ntrack;
+        g(iy) = g(iy)/(model.N-1)/model.ntrack;
+        %g(iy) = g(iy)/model.ntrack;
 
         ix = ix + model.Nvarpernode;
     end
-
-
+    
         iu = model.nx + (1:model.nu);
         for i = 1:model.N-1
             u = X(iu);
             % f2 = f2 + mean(u.^2); 
             g(iu) = g(iu) + model.Weffort * 2*u;
             g(iu)=g(iu)/(model.N-1)/model.nu;
-     %       g(iu)=g(iu)/model.nu;
-    
+            %g(iu)=g(iu)/model.nu;
             iu = iu + model.Nvarpernode;
         end
 
@@ -290,7 +311,7 @@ function [J] = conjac( X)
  	ix1 = 1:model.nx;   % index for the variables of node 1
     ic  = 1:model.Nconpernode;   % index for constraints from node 1
     iu1 = model.nx + (1:model.nu);  % index for the controls in node 1
-    Len = zeros(1,model.N);
+
     for i=1:model.N-1
 		% extract variables from two successive nodes
 		x1 = X(ix1);
@@ -327,7 +348,7 @@ function [J] = conjac( X)
     ilast = (model.N-1)*model.Nvarpernode + ifirst;
     npercon = numel(ifirst);
     
-%     c(model.Nconpernode*(model.N-1)+(1:npercon)) = X(ifirst) - X(ilast); % node one - the last one
+    c(model.Nconpernode*(model.N-1)+(1:npercon)) = X(ifirst) - X(ilast); % node one - the last one
     J(model.Nconpernode*(model.N-1)+(1:npercon) , ifirst) = speye(npercon);
     J(model.Nconpernode*(model.N-1)+(1:npercon) , ilast) = -speye(npercon);
 end
@@ -338,14 +359,14 @@ end
     
     NX   = model.Nvar;
 	hh       = 1e-6;
-%     X        = randn(NX,1);
+    %X        = randn(NX,1);
     X        = rand(NX,1); % a random vector of unknowns
 	f        = objfun(X);
 	grad     = objgrad(X);
 	c        = confun(X);
     Ncon     = size(c,1);
 	cjac     = conjac(X);
-% 	cjac_num = zeros(Ncon, NX);
+    %cjac_num = zeros(Ncon, NX);
 	cjac_num = spalloc(Ncon, NX,1000);
 
 	grad_num = zeros(NX,1);
