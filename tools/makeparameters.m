@@ -23,9 +23,8 @@ function [p] = makeparameters()
 	% These are model parameters
     p.g          = 9.80665;                     % gravity
 	p.Kcrm       =  1e5;                        % cable stiffness (N/m)
-    p.K          = 20;
-    p.Kseat          =  1e5;                        % seat stiffness (N/m)
-	p.Cseat          =  2*sqrt(p.M*p.K);            % seat damping (Ns/m), close to critical damping
+	p.K          =  1e5;                        % seat stiffness (N/m)
+	p.C          =  2*sqrt(p.M*p.K);            % seat damping (Ns/m), close to critical damping
 
 	% body segment parameters calculated using the tables from Winter's book
 	p.ShankMass        =  0.0465*2*p.M;                
