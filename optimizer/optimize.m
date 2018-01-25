@@ -9,6 +9,7 @@ function result = optimize(problem)
 %   X..........(scalar) initial guess (default: zeros)
     
     global model 
+    load Simresult
 
    [dSPACEdata, qdata, t, model.parameters] = datainterp2;
 
@@ -24,6 +25,8 @@ function result = optimize(problem)
     h =  model.h;
     tdc = (0:h:T)';    % time points for direct collocation
     model.Len = zeros(1,model.N);
+    model.task.Lmin = 0.2077;       % min and max of cable lenght from the data
+    model.task.Lmax =  1.1288;
 
     
   
@@ -73,6 +76,7 @@ function result = optimize(problem)
     % u = [M1(knm)...M5];
     model.nx = 13;
     model.nu = 5;
+    model.np = 1;
 
     %before scaling:
     % x_lb = [0    0     -2*pi    0   -pi/2       0   0  -10 -10 -10 -10 -10  0]';
@@ -81,26 +85,33 @@ function result = optimize(problem)
     % u_ub =  [700 ;700 ;700 ;700 ;700];
 
     % when scaled
-   x_lb = [0    0     -2*pi    0   -pi/2       0   0  -20 -10 -10 -10 -10  0]';
-    x_ub = [3  2*pi   2*pi  2*pi   pi/3      2*pi  20  20  20  20  20  20  5 ]'; 
+%     x_lb = [0    0     -2*pi    0   -pi/2       0   0  -20 -10 -10 -10 -10  0 ]';
+%     x_ub = [3  2*pi   2*pi  2*pi   pi/3      2*pi  20  20  20  20  20  20  5 ]'; 
+
+    % change the bounds to make the predictive simulation more realistic
+    x_lb = [0    80*pi/180     10*pi/180    40*pi/180   -50*pi/180       0*pi/180   0  -20 -10 -10 -10 -10  0 ]';
+    x_ub = [3   170*pi/180     170*pi/180   140*pi/180   100*pi/180      130*pi/180  20  20  20  20  20  20  5 ]'; 
     u_lb = [-700; -700 ;-700 ;-700 ;-700]/1000;
     u_ub =  [700 ;700 ;700 ;700 ;700]/1000;
+    p_lb = 0.5;
+    p_ub = 1.5;
+%     p_lb = 0.7;
+%     p_ub =  1.5;
     % make bounds for the trajectory optimization problem
-    X_lb = [repmat([x_lb ; u_lb], N, 1)];
-    X_ub = [repmat([x_ub ; u_ub], N, 1)];
+    X_lb = [repmat([x_lb ; u_lb], N, 1);p_lb];
+    X_ub = [repmat([x_ub ; u_ub], N, 1);p_ub];
 
-    % all variables, except flywheel position, must be periodic 
-    model.iper = 2:model.nx;  		
-
+    % all variables, except flywheel position, must be periodic
+    model.iper = 2:model.nx;
+    model.npar = numel(p_lb);
     model.nper = numel(model.iper);
-
-   	% collocation grid and unknowns
-    model.Nvarpernode = model.nx + model.nu;			% number of unknowns per node
-    model.Nconpernode = model.nx;                       % number of constraint equations per node (number of dynamic equations)
-    model.Nvar    = N * model.Nvarpernode ;             % number of unknowns 
-	model.Ncon    = (N-1)* model.Nconpernode + model.nper + model.nu ;       % number of constrains (including state and control periodicity)
-    % for turning the muscles on and off we can do it by going in a model
-    % and say number of muscles is zero
+    model.ntask = 2; % number of constraints for task when doing predictive simulation (cable length)
+    % collocation grid and unknowns
+    model.Nvarpernode = model.nx + model.nu  ;			% number of unknowns per node 
+    model.Nconpernode = model.nx ;                       % number of constraint equations per node (number of dynamic equations)
+    model.Nvar    = N * model.Nvarpernode + model.npar ;             % number of unknowns   
+    model.Ncon    = (N-1)* model.Nconpernode + model.nu + model.nper + model.ntask;       % number of constrains (including state and control periodicity)
+    model.ip = model.N*model.Nvarpernode + (1:model.npar); % since we only have 1 parameter, Npar = 1
 
     % if oldresult was provided, use it as initial guess, otherwise use data as initial guess
     if isfield(problem,'initialguess')
@@ -111,9 +122,10 @@ function result = optimize(problem)
             % resampling to N nodes, to be written
         end
     else
-          X0 = (X_lb + X_ub)/2;
-%         X0 = zeros(numel(X_lb),1);
-
+         X0 = [Simresult;1.052];
+%           X0 = (X_lb + X_ub)/2;
+ %        X0 = zeros(numel(X_lb),1);
+% using data as initial guess (try to see what if we remove it)
         ix = 1:model.nx;
         for i = 1:model.N-1
           iy = ix(model.itrack);
@@ -128,12 +140,14 @@ function result = optimize(problem)
 
     % Determine Jacobian structure and number of non-zeros
     Xr = rand(model.Nvar,1);
+%     Xr(end) = 1.0519;
     model.Jnnz = 1;
     J = conjac(Xr); %determins where the jacobian is not zoro
     model.conjacstructure = double(J ~= 0);% it compares each element in the jacobian to zero(it makes it one when its not zero, and zero when its zero)  
     %and then it stores it in Matlab as a logical variable (binary
     %variable). (recording 4 at 1:00:00)
     model.Jnnz = nnz(J);
+    model.conjacstructure(end-1:end,:) = 1;
 
     % Check the derivations, if N=10 was specified
     if N == 4
@@ -166,6 +180,8 @@ function result = optimize(problem)
     result.model = model;
     result.X = X;
     result.info = info;
+    
+    
 
     
 end	
@@ -175,16 +191,18 @@ function [f] = objfun(X)
     
     %f1 is tracking cost
     f1 = 0;
-    ix = 1:model.nx;
-    for i = 1:model.N-1
-        iy = ix(model.itrack);
-        y  = X(iy);
-        ymeas  = model.data(i,:)';% node i
-        f1 = f1 + mean(((y - ymeas)./model.dataSD').^2);  % y has 7 variables. this is the best way to write the cost function      
-        ix = ix + model.Nvarpernode;
-    end
-    f1 = f1/(model.N-1);
     
+    if (model.Wtrack ~= 0) %same change in objgrad
+        ix = 1:model.nx;
+        for i = 1:model.N-1
+            iy = ix(model.itrack);
+            y  = X(iy);
+            ymeas  = model.data(i,:)';% node i
+            f1 = f1 + mean(((y - ymeas)./model.dataSD').^2);  % y has 7 variables. this is the best way to write the cost function
+            ix = ix + model.Nvarpernode;
+        end
+        f1 = f1/(model.N-1);
+    end
     
     f2 = 0;
     iu = model.nx + (1:model.nu);
@@ -261,6 +279,7 @@ function [c] = confun(X)
     ix1 = 1:model.nx;               % index for the state variables of node 1
     iu1 = model.nx + (1:model.nu);  % index for the controls in node 1
     ic  = 1:model.Nconpernode;      % index for constraints from node 1
+    p = X(model.ip);             % extract the model parameters from X
     
     for i = 1:model.N-1
         % extract variables from successive nodes
@@ -268,6 +287,7 @@ function [c] = confun(X)
         x2 = X(ix1 + model.Nvarpernode);  
         u1 = X(iu1);
         u2 = X(iu1 + model.Nvarpernode);
+        p = X(model.ip);
       
     	% dynamics constraints are calculated by dynfun function
                 
@@ -290,14 +310,31 @@ function [c] = confun(X)
     ifirst = [model.iper model.nx+(1:model.nu)];
     ilast = (model.N-1)*model.Nvarpernode + ifirst;
     npercon = numel(ifirst);
-    
+  
     c(model.Nconpernode*(model.N-1)+(1:npercon)) = ...
         X(ifirst) - X(ilast); % node one - the last one
-   
+  
+%     %  task constraint for the min cable length 
+    x0 = X(1:model.nx);
+    [~,~,~,~,L0] = dynfun(x0,zeros(model.nx,1),zeros(model.nu,1)); % the cable length L only depends the body positions (q)
+    c(end-model.ntask+1) = L0 - model.task.Lmin;   % difference between final and initial cable length c(end-1)
+%    
+    %  task constraint for the max cable length 
+    tmax = X(end-model.npar+1);
+    i = find(min(diff(tmax > model.time)) == diff(tmax > model.time));	% find the index of Model.time which is just less than tmax: Huawei  
+    f = (tmax-model.time(i))/(model.time(i+1)-model.time(i)); %   
+    xi1 =  X( (model.nx+model.nu)*(i-1) + (1:model.nx) ) ;		% the state x at node i
+    [~,~,~,~,Li1] = dynfun(xi1,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length first point 
+    xi2 =  X( (model.nx+model.nu)*i + (1:model.nx)) ;   % the state x at node i+1 
+    [~,~,~,~,Li2] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
+    Ltmax = f*Li1 + (1-f)*Li2 ;    % linear interpolation of two above nodes
+    c(end) = Ltmax - model.task.Lmax;   % difference between final and initial cable length  
+
+
 end
 
 %====================================================================
-function [J] = conjac( X)
+function [J] = conjac(X)
 	
     global model
 
@@ -320,20 +357,21 @@ function [J] = conjac( X)
         u1 = X(iu1);
         iu2 = iu1 + model.Nvarpernode;
         u2 = X(iu2);
+        p = X(model.ip);
 
         if strcmp(model.discretization, 'BE')
-            [~, dfdx, dfdxdot,dfdu] = dynfun(x2, (x2-x1)/h, u2);
+            [~, dfdx, dfdxdot,dfdu] = dynfun(x2, (x2-x1)/h, u2);   %?????dLdq
             J(ic,ix1) = -dfdxdot/h;
             J(ic,ix2) = dfdx + dfdxdot/h;
             J(ic, iu2)  = dfdu;
         else
-            [~, dfdx, dfdxdot,dfdu] = dynfun((x1+x2)/2, (x2-x1)/h, (u1+u2)/2);
+            [~, dfdx, dfdxdot,dfdu] = dynfun((x1+x2)/2, (x2-x1)/h, (u1+u2)/2);    %?????dLdq
             J(ic,ix1) = dfdx/2 - dfdxdot/h;
             J(ic,ix2) = dfdx/2 + dfdxdot/h;
             J(ic, iu1)  = dfdu/2;
             J(ic, iu2)  = dfdu/2;
         end
-        
+
 		%  advance ix1 and irow to next node
 		ix1 = ix1 + model.Nvarpernode;
 		ic  = ic  + model.Nconpernode;
@@ -347,10 +385,43 @@ function [J] = conjac( X)
     ifirst = [model.iper model.nx+(1:model.nu)];
     ilast = (model.N-1)*model.Nvarpernode + ifirst;
     npercon = numel(ifirst);
-    
-    c(model.Nconpernode*(model.N-1)+(1:npercon)) = X(ifirst) - X(ilast); % node one - the last one
+   
+    %[1:model.Nconpernode*(model.N-1) where we have dynamic constraints] [dynamic constraints + (1:npercon) where we have periodicity constraints]
+    c(model.Nconpernode*(model.N-1)+(1:npercon)) = X(ifirst) - X(ilast); % node one - the last one 
     J(model.Nconpernode*(model.N-1)+(1:npercon) , ifirst) = speye(npercon);
     J(model.Nconpernode*(model.N-1)+(1:npercon) , ilast) = -speye(npercon);
+    
+    %  task constraint for the min cable length 
+    x0 = X(1:model.nx);
+    [~,~,~,~,L0,dL0dq] = dynfun(x0,zeros(model.nx,1),zeros(model.nu,1)); % the cable length L only depends the body positions (q)
+    c(end-model.ntask+1) = L0 - model.task.Lmin;   % difference between initial cable length and the min cable length from the data
+    J(end-model.ntask+1 , 2:6 ) =  dL0dq;  % L0 is a function of qs (2-6)
+%     
+    %  task constraint for the max cable length 
+    tmax = X(end-model.npar+1);
+    i = find( min(diff(tmax > model.time)) == diff(tmax > model.time) );	% find the index of Model.time which is just less than tmax: Huawei
+    
+    f = (tmax-model.time(i))/(model.time(i+1)-model.time(i)); % 
+    
+    xi1 =  X( (model.nx+model.nu)*(i-1) + (1:model.nx) ) ;		% the state x at node i
+    [~,~,~,~,Li1,dLi1dt] = dynfun(xi1,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length first point
+    
+    xi2 =  X( (model.nx+model.nu)*i + (1:model.nx)) ;   % the state x at node i+1 
+    [~,~,~,~,Li2,dLi2dt] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
+
+    Ltmax = f*Li1 + (1-f)*Li2 ;    % linear interpolation of two above nodes
+    c(end) = Ltmax - model.task.Lmax;   % difference between final and initial cable length
+   
+%     J(end , end-model.npar+1) = f* dLi1dt + (1-f)*dLi2dt;
+    J(end , (model.nx+model.nu)*(i-1) + (2:6)) = f* dLi1dt ;
+    J(end , (model.nx+model.nu)*i + (2:6)) = (1-f)*dLi2dt;
+    
+    dLtmaxdf = Li1 - Li2;
+    dfdtmax = 1/(model.time(i+1)-model.time(i));
+    J(end, end) = dLtmaxdf*dfdtmax;
+
+    
+
 end
 %====================================================================
  function checkderiv
