@@ -87,8 +87,6 @@ function result = optimize(problem)
     % when scaled
 %     x_lb = [0    0     -2*pi    0   -pi/2       0   0  -20 -10 -10 -10 -10  0 ]';
 %     x_ub = [3  2*pi   2*pi  2*pi   pi/3      2*pi  20  20  20  20  20  20  5 ]'; 
-
-    % change the bounds to make the predictive simulation more realistic
     x_lb = [0    80*pi/180     10*pi/180    40*pi/180   -50*pi/180       0*pi/180   0  -20 -10 -10 -10 -10  0 ]';
     x_ub = [3   170*pi/180     170*pi/180   140*pi/180   100*pi/180      130*pi/180  20  20  20  20  20  20  5 ]'; 
     u_lb = [-700; -700 ;-700 ;-700 ;-700]/1000;
