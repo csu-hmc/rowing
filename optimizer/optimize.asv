@@ -89,7 +89,7 @@ function result = optimize(problem)
 %     x_ub = [3  2*pi   2*pi  2*pi   pi/3      2*pi  20  20  20  20  20  20  5 ]'; 
     x_lb = [0    80*pi/180     10*pi/180    40*pi/180   -50*pi/180       0*pi/180   0  -20 -10 -10 -10 -10  0 ]';
     x_ub = [3   170*pi/180     170*pi/180   140*pi/180   100*pi/180      130*pi/180  20  20  20  20  20  20  5 ]'; 
-    u_lb = [-700; -700 ;-700 ;-700 ;-700]/1000; % convert to kNm and so IPOPT will solve it easier
+    u_lb = [-700; -700 ;-700 ;-700 ;-700]/1000;
     u_ub =  [700 ;700 ;700 ;700 ;700]/1000;
     p_lb = 0.5;
     p_ub = 1.5;
@@ -113,25 +113,35 @@ function result = optimize(problem)
 
     % if oldresult was provided, use it as initial guess, otherwise use data as initial guess
     if isfield(problem,'initialguess')
-        if isstr(problem.initialguess)
-            if strcmp(problem.initialguess,'random')
-                 X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
-            elseif strcmp(problem.initialguess,'zero')
-                 X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
-            elseif strcmp(problem.initialguess,' midpoint')
-                 X0 = (X_lb + X_ub)/2;               
-            else
-                 X0 = [Simresult;1.052];
-                 ix = 1:model.nx;
-                 for i = 1:model.N-1
-                     iy = ix(model.itrack);
-                     X0(iy)  = model.data(i,:)'; % node i
-                     ix = ix + model.Nvarpernode;
-                 end
-            end
-        end
-    end
+            if isstr(problem,'initialguess')
+                            if strcmp(problem,'random')
+                                X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
+                            elseif strcmp
                                 
+
+
+        if (numel(problem.initialguess) == model.Nvar)
+            X0 = problem.initialguess;
+        else
+            error('initial guess did not have the same N');
+            % resampling to N nodes, to be written
+        end
+    else
+        X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
+%         X0 = [Simresult;1.052]; % using simulation results from tracking code as initial guess
+%           X0 = (X_lb + X_ub)/2;
+ %        X0 = zeros(numel(X_lb),1);
+% using data as initial guess (try to see what if we remove it)
+        ix = 1:model.nx;
+        for i = 1:model.N-1
+          iy = ix(model.itrack);
+          X0(iy)  = model.data(i,:)'; % node i
+          ix = ix + model.Nvarpernode;
+        end
+%         iy = ix(model.itrack);
+%         X0(iy)  = model.data(i,:)'; % node i          
+    end
+
   
 
     % Determine Jacobian structure and number of non-zeros

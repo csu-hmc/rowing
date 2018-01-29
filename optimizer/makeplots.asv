@@ -56,36 +56,36 @@ function makeplots(filename)
     fprintf('    fw_velocity error: %8.3f\n\n', fw_velocity);
     fprintf('    handle_force error: %8.3f\n\n', handle_force);
     
-
-    
+    % convert radian to degree
+    X(iy2) = 180
     % ploting joint angles
 	figure(1);clf
     set(gcf,'renderer','painters');
   	subplot(5,1,1);
-	plot(T, X(iy2)*180/pi,'r', 'LineWidth',2);
-	hold on; plot(T, ymeas(1,:)*180/pi,'b:' ,'LineWidth',2);
+	plot(T, X(iy2)','r', 'LineWidth',2);
+	hold on; plot(T, ymeas(1,:),'b:' ,'LineWidth',2);
     ylabel({'ankle'},'fontweight','bold','fontsize',10)
 	legend('simulation','data');
     title(' joint angles (rad)')
     
  	subplot(5,1,2);
-	plot(T, X(iy3)*180/pi,'r', 'LineWidth',2);
-	hold on; plot(T, ymeas(2,:)*180/pi,'b:' ,'LineWidth',2);
+	plot(T, X(iy3),'r', 'LineWidth',2);
+	hold on; plot(T, ymeas(2,:),'b:' ,'LineWidth',2);
     ylabel({'knee'},'fontweight','bold','fontsize',10)
  
  	subplot(5,1,3);
-	plot(T, X(iy4)*180/pi,'r', 'LineWidth',2);
-	hold on; plot(T, ymeas(3,:)*180/pi,'b:' ,'LineWidth',2);
+	plot(T, X(iy4),'r', 'LineWidth',2);
+	hold on; plot(T, ymeas(3,:),'b:' ,'LineWidth',2);
     ylabel({'hip'},'fontweight','bold','fontsize',10)
  
  	subplot(5,1,4);
-	plot(T, X(iy5)*180/pi,'r', 'LineWidth',2);
-	hold on; plot(T, ymeas(4,:)*180/pi,'b:' ,'LineWidth',2);
+	plot(T, X(iy5),'r', 'LineWidth',2);
+	hold on; plot(T, ymeas(4,:),'b:' ,'LineWidth',2);
     ylabel({'shoulder'},'fontweight','bold','fontsize',10)
 
  	subplot(5,1,5);
-	plot(T, X(iy6)*180/pi,'r', 'LineWidth',2);
-	hold on; plot(T, ymeas(5,:)*180/pi,'b:' ,'LineWidth',2);
+	plot(T, X(iy6),'r', 'LineWidth',2);
+	hold on; plot(T, ymeas(5,:),'b:' ,'LineWidth',2);
     ylabel({'elbow'},'fontweight','bold','fontsize',10)
     xlabel('time (s)','fontweight','bold','fontsize',10);
     
