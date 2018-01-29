@@ -113,25 +113,27 @@ function result = optimize(problem)
 
     % if oldresult was provided, use it as initial guess, otherwise use data as initial guess
     if isfield(problem,'initialguess')
-        if (numel(problem.initialguess) == model.Nvar)
-            X0 = problem.initialguess;
+        if isstr(problem.initialguess)
+            if strcmp(problem.initialguess,'random')
+                 X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
+            elseif strcmp(problem.initialguess,'zero')
+                 X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
+            elseif strcmp(problem.initialguess,' midpoint')
+                 X0 = (X_lb + X_ub)/2;               
+            else
+                 X0 = [Simresult;1.052];
+                 ix = 1:model.nx;
+                 for i = 1:model.N-1
+                     iy = ix(model.itrack);
+                     X0(iy)  = model.data(i,:)'; % node i
+                     ix = ix + model.Nvarpernode;
+                 end
+            end
+       
         else
-            error('initial guess did not have the same N');
-            % resampling to N nodes, to be written
+         X0 = zeros(numel(X_lb),1);
+      
         end
-    else
-         X0 = [Simresult;1.052];
-%           X0 = (X_lb + X_ub)/2;
- %        X0 = zeros(numel(X_lb),1);
-% using data as initial guess (try to see what if we remove it)
-        ix = 1:model.nx;
-        for i = 1:model.N-1
-          iy = ix(model.itrack);
-          X0(iy)  = model.data(i,:)'; % node i
-          ix = ix + model.Nvarpernode;
-        end
-%         iy = ix(model.itrack);
-%         X0(iy)  = model.data(i,:)'; % node i          
     end
 
   
