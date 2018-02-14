@@ -27,9 +27,7 @@ function result = optimize(problem)
     model.Len = zeros(1,model.N);
     model.task.Lmin = 0.2077;       % min and max of cable lenght from the data
     model.task.Lmax =  1.1288;
-
     
-  
     % resample the tracking data to the DC time points
     qdata = interp1(t, qdata, tdc);
     dSPACEdata = interp1(t, dSPACEdata, tdc);   
@@ -87,8 +85,8 @@ function result = optimize(problem)
     % when scaled
 %     x_lb = [0    0     -2*pi    0   -pi/2       0   0  -20 -10 -10 -10 -10  0 ]';
 %     x_ub = [3  2*pi   2*pi  2*pi   pi/3      2*pi  20  20  20  20  20  20  5 ]'; 
-    x_lb = [0    80*pi/180     10*pi/180    40*pi/180   -50*pi/180       0*pi/180   0  -20 -10 -10 -10 -10  0 ]';
-    x_ub = [3   170*pi/180     170*pi/180   140*pi/180   100*pi/180      130*pi/180  20  20  20  20  20  20  5 ]'; 
+    x_lb = [0    80*pi/180     20*pi/180    50*pi/180   -40*pi/180       10*pi/180   0  -20 -10 -10 -10 -10  0 ]';
+    x_ub = [3   160*pi/180     130*pi/180   120*pi/180   80*pi/180      115*pi/180  20  20  20  20  20  20  0.5 ]'; 
     u_lb = [-700; -700 ;-700 ;-700 ;-700]/1000;
     u_ub =  [700 ;700 ;700 ;700 ;700]/1000;
     p_lb = 0.5;
@@ -98,6 +96,11 @@ function result = optimize(problem)
     % make bounds for the trajectory optimization problem
     X_lb = [repmat([x_lb ; u_lb], N, 1);p_lb];
     X_ub = [repmat([x_ub ; u_ub], N, 1);p_ub];
+    X_lb(1) = model.task.Lmin;
+    X_ub(1) = model.task.Lmin;
+
+    
+    
 
     % all variables, except flywheel position, must be periodic
     model.iper = 2:model.nx;
@@ -113,21 +116,23 @@ function result = optimize(problem)
 
     % if oldresult was provided, use it as initial guess, otherwise use data as initial guess
     if isfield(problem,'initialguess')
-        if isstr(problem.initialguess)
+        if ischar(problem.initialguess)
             if strcmp(problem.initialguess,'random')
-                 X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
+                 X0 = [Simresult;1.052]+0.1*rand(model.Nvar,1);
+%                  X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
+
             elseif strcmp(problem.initialguess,'zero')
                  X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
             elseif strcmp(problem.initialguess,' midpoint')
                  X0 = (X_lb + X_ub)/2;               
             else
                  X0 = [Simresult;1.052];
-                 ix = 1:model.nx;
-                 for i = 1:model.N-1
-                     iy = ix(model.itrack);
-                     X0(iy)  = model.data(i,:)'; % node i
-                     ix = ix + model.Nvarpernode;
-                 end
+%                  ix = 1:model.nx;
+%                  for i = 1:model.N-1
+%                      iy = ix(model.itrack);
+%                      X0(iy)  = model.data(i,:)'; % node i
+%                      ix = ix + model.Nvarpernode;
+%                  end
             end
        
         else
@@ -206,11 +211,20 @@ function [f] = objfun(X)
     
     f2 = 0;
     iu = model.nx + (1:model.nu);
+
     for i = 1:model.N-1
         u = X(iu);
-        f2 = f2 + mean(u.^2);        
+        f2 = f2 + mean(u.^2)*1000;        
         iu = iu + model.Nvarpernode;
     end
+%     iw = 8:12;
+%       for i = 1:model.N-1
+%         u = X(iu);
+%         w = X(iw);
+%         f2 = f2 + mean((u.*w).^2);        %power
+%         iu = iu + model.Nvarpernode;
+%         iw = iw + model.Nvarpernode;
+%       end
     f2 = f2/(model.N-1);
     % if we wanna do predictive (only have effort) we make the first weight (tracking)=0 
     f = model.Wtrack * f1 + model.Weffort * f2;
@@ -247,11 +261,39 @@ function [g] = objgrad(X)
         for i = 1:model.N-1
             u = X(iu);
             % f2 = f2 + mean(u.^2); 
-            g(iu) = g(iu) + model.Weffort * 2*u;
+            g(iu) = g(iu) + model.Weffort * 2*u *1000;
             g(iu)=g(iu)/(model.N-1)/model.nu;
             %g(iu)=g(iu)/model.nu;
             iu = iu + model.Nvarpernode;
         end
+        
+%         iw = 8:12;
+%            for i = 1:model.N-1
+%             u = X(iu);
+%             w = X(iw);
+%             %f2 = f2 + mean(u.*w);        
+%             g(iu) = g(iu) + model.Weffort * (w );
+%             g(iu)=g(iu)/(model.N-1)/model.nu;
+%             g(iw)=g(iw) + model.Weffort * (u );
+%             g(iw)=g(iw)/(model.N-1)/model.nu;
+%             %g(iu)=g(iu)/model.nu;
+%             iu = iu + model.Nvarpernode;
+%             iw = iw + model.Nvarpernode;
+%            end
+      
+%         iw = 8:12;
+%            for i = 1:model.N-1
+%             u = X(iu);
+%             w = X(iw);
+%             %f2 = f2 + (u.*w).^2;       
+%             g(iu) = g(iu) + model.Weffort * (2*u.*(w.^2) );
+%             g(iu)=g(iu)/(model.N-1)/model.nu;
+%             g(iw)=g(iw) + model.Weffort * (2*w.*(u.^2)  );
+%             g(iw)=g(iw)/(model.N-1)/model.nu;
+%             %g(iu)=g(iu)/model.nu;
+%             iu = iu + model.Nvarpernode;
+%             iw = iw + model.Nvarpernode;
+%            end
 
     % a short pause to make sure that IPOPT screen output appears
     % continuously (if print_level was set accordingly)
@@ -329,6 +371,11 @@ function [c] = confun(X)
     [~,~,~,~,Li2] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
     Ltmax = f*Li1 + (1-f)*Li2 ;    % linear interpolation of two above nodes
     c(end) = Ltmax - model.task.Lmax;   % difference between final and initial cable length  
+    
+d    
+    
+    
+
 
 
 end
