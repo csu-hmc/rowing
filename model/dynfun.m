@@ -1,8 +1,8 @@
-    function [f, dfdx, dfdxdot, dfdu,L , dLdq] = dynfun(x, xdot, u)%dLdx (x2 to 6 which are the angles) dLdq 1 by 5 matrix
-    % the 13 dynamics equations of the system, in the form
+    function [f, dfdx, dfdxdot, dfdu, L, dLdq] = dynfun(x, xdot, u)%dLdx (x2 to 6 which are the angles) dLdq 1 by 5 matrix
+    % The 13 dynamics equations of the system, in the form
     %   f(x, dx/dt, u) = 0
-    % where x contains the 13 state variables and u are the 5 torques
-    % p contains the 5 model parameters
+    % where x contains the 13 state variables and u are the 5 joint torques
+	% This function also outputs the wrist-sprocket distance L and related Jacobian
     
     global model 
     
@@ -11,7 +11,10 @@
 	m =  model.parameters.m ;
     K =  model.parameters.K;      % shock cord stiffness
     L0 = model.parameters.L0;     % the wrist-sprocket distance when shock cord has zero force
+	
+	% we think that Kcrm=0 and Bcrm=large will work well
     Kcrm = model.parameters.Kcrm; % chain rachet mechanism stiffness
+    Bcrm = model.parameters.Bcrm; % chain rachet mechanism damping
 
     f = zeros(13,1);
     
@@ -50,10 +53,11 @@
     dfdxdot(8:12, 8:12) = dz_dqdd(1:5,1:5);
     dfdu(8:12, :) = -speye(5);
     
-    % flywheel dynamics, flywheel sees cable force, minus the shock cord
-    % force
+    % extract the wrist-sprocket distance and its velocity from z
     L = z(6);
+	Ldot = z(7);
     dLdq = dz_dq(6,:);
+	dLdotdq = dz_dq(7,:);
     
     % dynamics of the flywheel
     % m*a - Fdamping - Fcrm = 0
@@ -68,12 +72,14 @@
     %use epsilon for non-linear spring to remove the non-linearity in the
     %derivatives
     epsilon = 0.000001;
-    Fsc= Kcrm * (L - x(1) );
+    Fsc= Kcrm * (L - x(1)) + Bcrm * (Ldot - x(7));
     Fcrm = (Fsc + sqrt(Fsc^2+epsilon^2))/2  ;
     dFcrmdFsc = (1+Fsc/sqrt(Fsc^2+epsilon^2))/2; 
     f(13) = x(13) - Fcrm - K*(L - L0);
     dfdx(13,13) = 1;
     dfdx(13,1) = Kcrm*dFcrmdFsc;
-    dfdx(13,2:6) = -(dFcrmdFsc*Kcrm + K)*dLdq;
+    dfdx(13,7) = Bcrm*dFcrmdFsc;
+    dfdx(13,2:6) = -(dFcrmdFsc*Kcrm + K)*dLdq - dFcrmdFsc*Bcrm*dLdotdq;
+	dfdx(13,8:12) = -dFcrmdFsc*Bcrm*dLdq;		% because dLdot/dqdot = dL/dq
     
 end

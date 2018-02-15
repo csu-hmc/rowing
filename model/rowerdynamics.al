@@ -2,8 +2,13 @@
 %
 % Autolev code to compute inverse dynamics of the rower model, including the cable model
 %
+% The matlab function makerowerdynamics.m will transform this into a Matlab function that
+% looks like this:
+%
+% function [f, df_dq, df_dqd, df_dqdd, df_dFc, stick] = rowerdynamics(q,qd,qdd,Fc,par)
+%
 % Author: Ton van den Bogert
-% Last revised: 12/21/2016
+% Last revised: 2/15/2018
 
 PAUSE 0
 AUTOZ ON
@@ -36,10 +41,10 @@ Constants par__ForearmMass, par__ForearmInertia, par__ForearmCM, par__ForearmLen
 Constants par__Xankle, par__Yankle
 Constants par__Xsprocket, par__Ysprocket		% point where the cable comes out of the machine
 Constants par__a, par__b						% seat path is Y = a*X + b
-Constants par__K, par__C						% seat stiffness and damping
-Constants par__Kcrm								% cable stiffness parameter
+Constants par__Kseat, par__Cseat				% seat stiffness and damping
+Constants par__Kcrm, par__K     				% cable stiffness and return spring stiffness
 Constants par__g								% gravity
-Constants xfw									% flywheel position
+Constants Fc									% cable force (input from Matlab dynamics function)
 
 %----------------------------------
 % Define bodies and points
@@ -133,17 +138,17 @@ A2pts(Ground, Forearm, Elbow, ForearmO);
 gravity(-par__g*Ground2>)
 PP> = (par__a*Ground1>  - Ground2>) / sqrt(1+par__a*par__a)        % a unit vector that is perpendicular to the line 
 d = dot(P_GroundO_Hip> - par__b*Ground2>,PP>)            % perpendicular distance from Hip to the line
-force_Hip> += -par__K*d*PP> - par__C*dt(d)*PP>       % spring and damper force perpendicular to the line and
+force_Hip> += -par__Kseat*d*PP> - par__Cseat*dt(d)*PP>       % spring and damper force perpendicular to the line and
 
 %-------------------------------------------------------
 % compute wrist position and cable force
 %-------------------------------------------------------
 P_Elbow_Wrist> = par__ForearmLen*Forearm1>			
 V2pts(Ground, Forearm, Elbow, Wrist);		% velocity is needed for equations of motion
-cable> = P_GroundO_Wrist> - Vector(Ground,par__Xsprocket,par__Ysprocket,0)  % vector from sprocket to wrist
-Lc = mag(cable>) - xfw;						% distance between wrist and flywheel position
-Fc = par__K * (Lc + abs(Lc))/2				% cable force is always positive
-force_Wrist> += -Fc * unitvec(cable>)		% force vector acting on the wrist
+cable> = Vector(Ground,par__Xsprocket,par__Ysprocket,0) - P_GroundO_Wrist>   % vector from wrist to sprocket
+L = mag(cable>);						    % distance between wrist and sprocket 
+Ldot = dt(L);
+force_Wrist> += Fc * unitvec(cable>)		% force vector acting on the wrist
 
 %----------------------------------------------------------
 % x and y coordinates of the joints and sprocket, stored in a 6x2 matrix
@@ -159,7 +164,7 @@ stick = [	par__Xankle,    			par__Yankle ; &
 %----------------------------------------------------------------
 % generate the outputs
 %----------------------------------------------------------------
-f = [-fr()-frstar() ; Fc]			% the five torques (Nm) and the cable force (N)
+f = -fr()-frstar()			% the five torques
 
 % vectors needed to define Jacobian matrices
 q   = [q1,   q2,   q3,   q4,   q5]
@@ -170,9 +175,11 @@ qdd = [q1'', q2'', q3'', q4'', q5'']
 df_dq   = ZEE(D(f,q))
 df_dqd  = ZEE(D(f,qd))
 df_dqdd = ZEE(D(f,qdd))
-df_dxfw = ZEE(D(f,xfw))
+df_dFc = ZEE(D(f,Fc))
+dL_dq = ZEE(D(L,q))
+dLdot_dq = ZEE(D(Ldot,q))
 
-Encode f, df_dq, df_dqd, df_dqdd, df_dxfw, stick
+Encode f, df_dq, df_dqd, df_dqdd, df_dFc, L, dL_dq, dLdot_dq, stick
 Code Algebraic() tmp.m
 
 EXIT
