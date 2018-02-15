@@ -53,7 +53,7 @@ function makerowerdynamics
     fprintf(fid2,'%%            par.Kcrm						    %% cable stiffness parameter	\n');
     fprintf(fid2,'%%\n');
     fprintf(fid2,'%% Output:\n');
-    fprintf(fid2,'%%      f...................(6x1) 5 joint torques (Nm) and cable force (N)\n');
+    fprintf(fid2,'%%      f...................(6x1) 5 joint torques and cable force\n');
     fprintf(fid2,'%%      df_dq...............(6x5) Jacobian matrix df/dq\n');
     fprintf(fid2,'%%      df_dqd..............(6x5) Jacobian matrix df/dqdot\n');
     fprintf(fid2,'%%      df_dqdd.............(6x5) Jacobian matrix df/dqdotdot\n');
