@@ -14,7 +14,7 @@
     fixed_yp0 = [];
     T = 0:0.01:2.0;                                     % simulation time
     [y0,yp0] = decic(@dyn,T(1),y0,fixed_y0,yp0,fixed_yp0);	% find consistent initial conditions
-    [tt,yy,L]  = ode15i(@dyn, T, y0,yp0);			% simulate using ode15i
+    [tt,yy]  = ode15i(@dyn, T, y0,yp0);			% simulate using ode15i
 
     % make the AVI file
     disp('making AVI file...')
@@ -54,13 +54,7 @@ end
 %=======================================================================
 function f =  dyn(t,y, ydot)
 
-% dynfun(t,y,ydot)
-% dynamics of the rower model, in implicit form f(y,ydot,t) = 0
-% where y is (q,qdot)
-	global model
-	f = zeros(10,1);		% f will be a 10x1 matrix
-
-    % extract q, qdot, qdotdot from y and ydot
+    % extract q, qdot from y
    	q = y(2:6);
 	qd = y(8:12);
    
@@ -71,8 +65,6 @@ function f =  dyn(t,y, ydot)
 	% simulation 3, use a leaning back setpoint, to make the human pull
 	% simulation 4, use tstart = 0.5, model should fall down and come back up
 	qsetpoint = [152.5304  ; 18.1593;  114.5404 ; -23.0064;  102.3893]  * pi/180;	
-
-    
 	tstart = 0.4;
 	if t < tstart                                         
 		kp = 0;
@@ -82,21 +74,14 @@ function f =  dyn(t,y, ydot)
 		kd = 50;
 	end
 	tau = -kp*(q-qsetpoint) - kd*qd;
-	[f,~,~,~,L] = dynfun(y,ydot,tau);
-% % 	equations 1-5 of the implicit dynamics: derivative of q must be equal to qdot
-% 	f(1:5) = ydot(1:5) - y(6:10);
-% 	
-% % 	equations 6-10: inverse dynamic torque must be equal to the applied torque
-% 	xfw = 100;				% move the flywheel far to the right, so no cable force will be generated
-%     ff = rowerdynamics(q,qd,qdd,xfw,model.parameters);  % do the inverse dynamic calculation
-% 	f(6:10) = tau - ff(1:5);                            % first 5 elements of ff are the inverse dynamic torques
-
-%     if toc > 1.0
-%         fprintf('simulating...  t = %8.3f\n',t);
-%         tic
-%     end
     
-	
-  
+    % evaluate the implicit dynamics function
+	f = dynfun(y,ydot,tau);
+
+	if toc > 1.0
+        fprintf('simulating...  t = %8.3f\n',t);
+        tic
+	end
+    
 end
 %=======================================================================
