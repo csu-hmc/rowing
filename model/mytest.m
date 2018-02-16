@@ -30,7 +30,7 @@ function mytest
     % make plots
     figure(2)
     plot(tt, q*180/pi, 'LineWidth',2);
-    legend('q1','q2','q3','q4','q5','f');
+    legend('q1','q2','q3','q4','q5');
     xlabel('time (s)','fontweight','bold','fontsize',10);
     ylabel('angle (deg)','fontweight','bold','fontsize',10);
     title('Joint Angles','fontweight','bold','fontsize',10)
