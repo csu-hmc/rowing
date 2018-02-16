@@ -1,6 +1,9 @@
 function mytest
     % runs a forward dynamic simulation of the rower model to test the dynamics code
     global model
+    tic
+    
+    addpath('../tools');
     [~,~,~, model.parameters] = datainterp2;
 	
     % choose a suitable initial condition: realistic joint angles, and choose flywheel position y(1)
@@ -34,20 +37,20 @@ function mytest
     figure(3)
     plot(tt, f, 'LineWidth',2);
     xlabel('time (s)','fontweight','bold','fontsize',10);
-    ylabel('force (N)','fontweight','bold','fontsize',10);
+    ylabel('wrist force (N)','fontweight','bold','fontsize',10);
     title('Force','fontweight','bold','fontsize',10)
     
     figure(4)
     plot(tt, yy(:,1), 'LineWidth',2);
     xlabel('time (s)','fontweight','bold','fontsize',10);
     ylabel('fwpos (m)','fontweight','bold','fontsize',10);
-    title('fwpos','fontweight','bold','fontsize',10)
+    title('flywheel position','fontweight','bold','fontsize',10)
     
     figure(5)
     plot(tt, yy(:,7), 'LineWidth',2);
     xlabel('time (s)','fontweight','bold','fontsize',10);
-    ylabel('fwvelo (m)','fontweight','bold','fontsize',10);
-    title('fwvelo','fontweight','bold','fontsize',10)
+    ylabel('fwvelo (m/s)','fontweight','bold','fontsize',10);
+    title('flywheel velocity','fontweight','bold','fontsize',10)
 
 end
 %=======================================================================

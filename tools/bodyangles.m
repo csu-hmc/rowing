@@ -2,7 +2,7 @@ function [q,t2,p] = bodyangles
     % better fucntion name the part that produce p and q
     
     % load X2016_03_17_trial2_markers
-    load Mdata2
+    load('../data/Mdata2');
     
     %choose the averaged trial number (to underestand how the data is averaged visit "how to make data note")
     d = MDATA;
@@ -104,7 +104,8 @@ function [q,t2,p] = bodyangles
     % rowing machine parameters from parameter identification
     p.C = scale * 89.68;             % flywheel damping coefficient kN/(m/s)^2
 	p.m = scale * 539.6;             % flywheel equivalent mass
-  	p.Kcrm = scale * 28386;          % stiffness of cable and ratchet mechanism (kN/m) (CHECK VALUE IN PARAMETER IDENTIFICATION
+  	p.Kcrm = scale * 28386;          % stiffness of ratchet mechanism (kN/m)
+  	p.Bcrm = scale * 0;              % damping of ratchet mechanism (kNs/m)
     p.K =  scale * 12.97 ;			 % shock cord stiffness (kN/m)
     p.L0 = 0.2;                      % the wrist-sprocket distance at which shock cord has no force
     

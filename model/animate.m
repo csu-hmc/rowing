@@ -19,7 +19,7 @@ function animate(q, par)
     for i = 1:nframes
         % use the rowerdynamics function to get the stick figure
         % coordinates at frame i
-        [~,~,~,~,~,s] = rowerdynamics(q(i,:)',qd,qdd,xfw,par);
+        [~,~,~,~,~,~,~,~,s] = rowerdynamics(q(i,:)',qd,qdd,xfw,par);
         clf
         plot(s(:,1),s(:,2),'o-');
         hold on

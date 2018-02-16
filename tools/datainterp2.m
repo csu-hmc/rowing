@@ -1,9 +1,7 @@
-
 function [dSPACEdata, qdata, t, p] = datainterp2
 
     global model
-    load('Mdata2.mat');
-    load('data2richter.mat');    
+    load('../data/data2richter.mat');    
 
     model.r = 0.0135;
     HMCdata.tvect = DATA(:,1);  %time
@@ -16,15 +14,11 @@ function [dSPACEdata, qdata, t, p] = datainterp2
     % time grid with N points
     HMCdata.tvect = HMCdata.tvect - HMCdata.tvect(1);		% ensure that time starts at zero
     HMCdata.T = HMCdata.tvect(end);  % duration of the rowing cycle
-    %HMCdata.force = HMCdata.force/1000;	% we do everything in kN
 
     [qdata,t2,p] = bodyangles;
 
     % One rowing cycle
     frames = 1087:1278; % One rowing cycle (included both pulling and returning phases)
-    %frames = 1087:1187; % half a rowing cycle (the first phase)
-    %frames = 1188:1287; % half a rowing cycle (the second phase)
-
     t2 = t2(frames);
     qdata = qdata(frames,:);
     

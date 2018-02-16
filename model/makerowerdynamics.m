@@ -52,14 +52,14 @@ function makerowerdynamics
     fprintf(fid2,'%%            par__Kseat, par__Cseat				%% seat stiffness and damping\n');
     fprintf(fid2,'%%\n');
     fprintf(fid2,'%% Output:\n');
-    fprintf(fid2,'%%      f...................(6x1) 5 joint torques\n');
-    fprintf(fid2,'%%      df_dq...............(6x5) Jacobian matrix df/dq\n');
-    fprintf(fid2,'%%      df_dqd..............(6x5) Jacobian matrix df/dqdot\n');
-    fprintf(fid2,'%%      df_dqdd.............(6x5) Jacobian matrix df/dqdotdot\n');
-    fprintf(fid2,'%%      df_dFc..............(6x1) Jacobian matrix df/dFc\n');
+    fprintf(fid2,'%%      f...................(5x1) 5 joint torques\n');
+    fprintf(fid2,'%%      df_dq...............(5x5) Jacobian matrix df/dq\n');
+    fprintf(fid2,'%%      df_dqd..............(5x5) Jacobian matrix df/dqdot\n');
+    fprintf(fid2,'%%      df_dqdd.............(5x5) Jacobian matrix df/dqdotdot\n');
+    fprintf(fid2,'%%      df_dFc..............(5x1) Jacobian matrix df/dFc\n');
     fprintf(fid2,'%%      L...................(scalar) wrist-sprocket distance (m)\n');
-    fprintf(fid2,'%%      dL_dq...............(1x6) Jacobian matrix dL/dq\n');
-    fprintf(fid2,'%%      dLdot_dq............(1x6) Jacobian matrix dLdot/dq\n');
+    fprintf(fid2,'%%      dL_dq...............(1x5) Jacobian matrix dL/dq\n');
+    fprintf(fid2,'%%      dLdot_dq............(1x5) Jacobian matrix dLdot/dq\n');
     fprintf(fid2,'%%      stick...............(7x2) x,y of ankle,knee,hip,shoulder,elbow,wrist,sprocket\n');
     fprintf(fid2,'%%\n');
 
@@ -70,8 +70,8 @@ function makerowerdynamics
 		fprintf(fid2,'    q%1dpp = qdd(%1d);\n', i,i);	
     end
     
-    % make sure that f comes out as a 6x1 column vector
-    fprintf(fid2,'    f = zeros(6,1); \n');
+    % make sure that f comes out as a 5x1 column vector
+    fprintf(fid2,'    f = zeros(5,1); \n');
     
 	% copy the necessary parts of C code from fid1 to fid2
 	copying = 0;
