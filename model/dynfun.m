@@ -1,4 +1,4 @@
-    function [f, dfdx, dfdxdot, dfdu, L, dLdq] = dynfun(x, xdot, u)%dLdx (x2 to 6 which are the angles) dLdq 1 by 5 matrix
+    function [f, dfdx, dfdxdot, dfdu, L, Ldot] = dynfun(x, xdot, u)%dLdx (x2 to 6 which are the angles) dLdq 1 by 5 matrix
     % The 13 dynamics equations of the system, in the form
     %   f(x, dx/dt, u) = 0
     % where x contains the 13 state variables and u are the 5 joint torques
@@ -37,6 +37,9 @@
     % using inverse dynamics and also the wrist-sprocket length L
     [z, dz_dq, dz_dqd, dz_dqdd, dz_dFc, L, dL_dq, dLdot_dq] = rowerdynamics(q,qd,qdd,x(13),model.parameters);% inverse dynamics so gives us the z(torques) 
     Ldot = dL_dq * qd;
+    
+    
+
     
     % multibody dynamics
     f(8:12) = z - u;
