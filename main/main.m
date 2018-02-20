@@ -7,14 +7,14 @@ function main
 
 % Add that folder plus all subfolders to the path.
 %     mkdir('optimizer')
-%     addpath(genpath('optimizer'))
-%     addpath(genpath('model'))
-%     addpath(genpath('tools'))   
-%     addpath(genpath('data'))  
+    addpath(genpath('optimizer'))
+    addpath(genpath('model'))
+    addpath(genpath('tools'))   
+    addpath(genpath('data'))  
     
 
-    problem.initialguess = 'sim';
-	problem.N = 70;			        % number of collocation points
+    problem.initialguess = 'simulation';
+	problem.N = 4;			        % number of collocation points
 %     problem.initialguess = 'midpoint';
 % 	problem.N = 4;			        % number of collocation points
 %     model.task.Lmin = 0.2077;       % min and max of cable lenght from the data

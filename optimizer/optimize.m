@@ -106,7 +106,10 @@ function result = optimize(problem)
     model.iper = 2:model.nx;
     model.npar = numel(p_lb);
     model.nper = numel(model.iper);
-    model.ntask = 2; % number of constraints for task when doing predictive simulation (cable length)
+     model.ntask = 2; % number of constraints for task when doing predictive simulation (cable length)
+%     model.ntask = 3; % number of constraints for task when doing predictive simulation (intial and final cable length + 
+    %flywheel postion should be equal to the max cable length at tmax + intial flywheel postion should be equal to the intial cable length )
+
     % collocation grid and unknowns
     model.Nvarpernode = model.nx + model.nu  ;			% number of unknowns per node 
     model.Nconpernode = model.nx ;                       % number of constraint equations per node (number of dynamic equations)
@@ -360,6 +363,8 @@ function [c] = confun(X)
     x0 = X(1:model.nx);
     [~,~,~,~,L0] = dynfun(x0,zeros(model.nx,1),zeros(model.nu,1)); % the cable length L only depends the body positions (q)
     c(end-model.ntask+1) = L0 - model.task.Lmin;   % difference between final and initial cable length c(end-1)
+%     c(end-model.ntask) = L0 - model.task.Lmin;   % difference between final and initial cable length c(end-2) 
+
 %    
     %  task constraint for the max cable length 
     tmax = X(end-model.npar+1);
@@ -370,9 +375,17 @@ function [c] = confun(X)
     xi2 =  X( (model.nx+model.nu)*i + (1:model.nx)) ;   % the state x at node i+1 
     [~,~,~,~,Li2] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
     Ltmax = f*Li1 + (1-f)*Li2 ;    % linear interpolation of two above nodes
-    c(end) = Ltmax - model.task.Lmax;   % difference between final and initial cable length  
+   c(end-model.ntask+2) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length   
+%     c(end-1) = Ltmax - model.task.Lmax;   % difference between the time that cable length is max(from the previous simulation results) and maximum cable length  
     
-d    
+% % task constraint for the flywheel position
+%     flywheel_pos1 = xi1(1);
+%     flywheel_pos2 = xi2(1);
+%     flywheel_pos = f*flywheel_pos1 + (1-f)*flywheel_pos2;
+%     c(end-model.ntask+3) = flywheel_pos - model.task.Lmax; % difference between maximum cable length and flwyheel position
+    
+%     init_flywheel_pos = x0(1);
+%     c(end-model.ntask+4) = init_flywheel_pos - model.task.Lmin;   % difference between final and initial cable length c(end-1)
     
     
 
@@ -438,6 +451,35 @@ function [J] = conjac(X)
     J(model.Nconpernode*(model.N-1)+(1:npercon) , ifirst) = speye(npercon);
     J(model.Nconpernode*(model.N-1)+(1:npercon) , ilast) = -speye(npercon);
     
+%     %  task constraint for the min cable length 
+%     x0 = X(1:model.nx);
+%     [~,~,~,~,L0,dL0dq] = dynfun(x0,zeros(model.nx,1),zeros(model.nu,1)); % the cable length L only depends the body positions (q)
+%     c(end-model.ntask+1) = L0 - model.task.Lmin;   % difference between initial cable length and the min cable length from the data
+%     J(end-model.ntask+1 , 2:6 ) =  dL0dq;  % L0 is a function of qs (2-6)
+% %     
+%     %  task constraint for the max cable length 
+%     tmax = X(end-model.npar+1);
+%     i = find( min(diff(tmax > model.time)) == diff(tmax > model.time) );	% find the index of Model.time which is just less than tmax: Huawei
+%     
+%     f = (tmax-model.time(i))/(model.time(i+1)-model.time(i)); % 
+%     
+%     xi1 =  X( (model.nx+model.nu)*(i-1) + (1:model.nx) ) ;		% the state x at node i
+%     [~,~,~,~,Li1,dLi1dt] = dynfun(xi1,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length first point
+%     
+%     xi2 =  X( (model.nx+model.nu)*i + (1:model.nx)) ;   % the state x at node i+1 
+%     [~,~,~,~,Li2,dLi2dt] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
+% 
+%     Ltmax = f*Li1 + (1-f)*Li2 ;    % linear interpolation of two above nodes
+%     c(end) = Ltmax - model.task.Lmax;   % difference between final and initial cable length
+%    
+% %     J(end , end-model.npar+1) = f* dLi1dt + (1-f)*dLi2dt;
+%     J(end , (model.nx+model.nu)*(i-1) + (2:6)) = f* dLi1dt ;
+%     J(end , (model.nx+model.nu)*i + (2:6)) = (1-f)*dLi2dt;
+%     
+%     dLtmaxdf = Li1 - Li2;
+%     dfdtmax = 1/(model.time(i+1)-model.time(i));
+%     J(end, end) = dLtmaxdf*dfdtmax;
+
     %  task constraint for the min cable length 
     x0 = X(1:model.nx);
     [~,~,~,~,L0,dL0dq] = dynfun(x0,zeros(model.nx,1),zeros(model.nu,1)); % the cable length L only depends the body positions (q)
@@ -457,15 +499,36 @@ function [J] = conjac(X)
     [~,~,~,~,Li2,dLi2dt] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
 
     Ltmax = f*Li1 + (1-f)*Li2 ;    % linear interpolation of two above nodes
-    c(end) = Ltmax - model.task.Lmax;   % difference between final and initial cable length
+    c(end-model.ntask+2) = Ltmax - model.task.Lmax;   % difference between final and initial cable length
    
 %     J(end , end-model.npar+1) = f* dLi1dt + (1-f)*dLi2dt;
-    J(end , (model.nx+model.nu)*(i-1) + (2:6)) = f* dLi1dt ;
-    J(end , (model.nx+model.nu)*i + (2:6)) = (1-f)*dLi2dt;
+    J(end-model.ntask+2 , (model.nx+model.nu)*(i-1) + (2:6)) = f* dLi1dt ;
+    J(end-model.ntask+2 , (model.nx+model.nu)*i + (2:6)) = (1-f)*dLi2dt;
     
     dLtmaxdf = Li1 - Li2;
     dfdtmax = 1/(model.time(i+1)-model.time(i));
-    J(end, end) = dLtmaxdf*dfdtmax;
+    J(end-model.ntask+2, end-model.ntask+2) = dLtmaxdf*dfdtmax;
+    
+    
+    
+%     % task constraint for the flywheel position
+%     flywheel_pos1 = xi1(1);
+%     flywheel_pos2 = xi2(1);
+%     flywheel_pos = f*flywheel_pos1 + (1-f)*flywheel_pos2;
+%     c(end-model.ntask+3) = flywheel_pos - model.task.Lmax; % difference between maximum cable length and flwyheel position
+    
+%     J(end-model.ntask+3 , (model.nx+model.nu)*(i-1) + 1) = f*xi1(7);
+%     J(end-model.ntask+3 , (model.nx+model.nu)*i + 1) = (1-f)*xi2(7);
+% 
+% %     
+%     dflywheel_posdf = flywheel_pos1 - flywheel_pos2;
+%     dfdtmax = 1/(model.time(i+1)-model.time(i));
+%     J(end-model.ntask+3, end-model.ntask+3) = dflywheel_posdf*dfdtmax;
+    
+%     init_flywheel_pos = x0(1);
+%     c(end-model.ntask+4) = init_flywheel_pos - model.task.Lmin;   % difference between final and initial cable length c(end-1)
+% 
+%     J(end-model.ntask+4 , 1 ) =  x0(7);  % init_flywheel_pos derivetive will be initial flywheel velocity)
 
     
 
