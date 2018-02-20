@@ -5,6 +5,96 @@ function mytest
     
     addpath('../tools');
     [~,~,~, model.parameters] = datainterp2;
+    
+    % test the derivatives of dynfun.m
+    disp('Testing dynfun.m');
+    x = rand(13,1);
+    xd = rand(13,1);
+    u = rand(5,1);
+    [f, df_dx, df_dxd, df_du, L, dL_dq] = dynfun(x, xd, u);
+    df_dx_num = zeros(13,13);
+    df_dxd_num = zeros(13,13);
+    df_du_num = zeros(13,5);
+    dL_dq_num = zeros(1,5);
+    hh = 1e-7;
+    for i = 1:13
+        save = x(i);
+        x(i) = x(i) + hh;
+        [fh,~,~,~,Lh] = dynfun(x, xd, u);
+        df_dx_num(:,i) = (fh - f)/hh;
+        if (i>=2) && (i<=6)
+            dL_dq_num(1,i-1) = (Lh - L)/hh;
+        end
+        x(i) = save;
+        %---------------------
+        save = xd(i);
+        xd(i) = xd(i) + hh;
+        fh = dynfun(x, xd, u);
+        df_dxd_num(:,i) = (fh - f)/hh;
+        xd(i) = save;
+    end
+    for i = 1:5
+        save = u(i);
+        u(i) = u(i) + hh;
+        fh = dynfun(x, xd, u);
+        df_du_num(:,i) = (fh - f)/hh;
+        u(i) = save;
+    end
+	fprintf('Max. error in df_dx: ');       matcompare(df_dx, df_dx_num);
+	fprintf('Max. error in df_dxd: ');       matcompare(df_dxd, df_dxd_num);
+	fprintf('Max. error in df_du: ');       matcompare(df_du, df_du_num);
+	fprintf('Max. error in dL_dq: ');       matcompare(dL_dq, dL_dq_num);
+   
+    
+    % test the derivatives of rowerdynamics.m
+    disp('Testing rowerdynamics.m...');
+    q = rand(5,1);
+    qd = rand(5,1);
+    qdd = rand(5,1);
+    Fc = rand(1,1);
+    [f, df_dq, df_dqd, df_dqdd, df_dFc, L, dL_dq, dLdot_dq] = rowerdynamics(q,qd,qdd,Fc,model.parameters);
+    df_dq_num = zeros(5,5);
+    df_dqd_num = zeros(5,5);
+    df_dqdd_num = zeros(5,5);
+    df_dFc_num = zeros(5,1);
+    dL_dq_num = zeros(1,5);
+    dLdot_dq_num = zeros(1,5);
+    Ldot = dL_dq * qd;
+    hh = 1e-7;
+    for i = 1:5
+        save = q(i);
+        q(i) = q(i) + hh;
+        [fh,~,~,~,~,Lh,dL_dqh] = rowerdynamics(q,qd,qdd,Fc,model.parameters);
+        df_dq_num(:,i) = (fh - f)/hh;
+        dL_dq_num(:,i) = (Lh - L)/hh;
+        Ldoth = dL_dqh * qd;
+        dLdot_dq_num(:,i) = (Ldoth - Ldot)/hh;
+        q(i) = save;
+        %-----------------------
+        save = qd(i);
+        qd(i) = qd(i) + hh;
+        fh = rowerdynamics(q,qd,qdd,Fc,model.parameters);
+        df_dqd_num(:,i) = (fh - f)/hh;
+        qd(i) = save;
+        %-----------------------
+        save = qdd(i);
+        qdd(i) = qdd(i) + hh;
+        fh = rowerdynamics(q,qd,qdd,Fc,model.parameters);
+        df_dqdd_num(:,i) = (fh - f)/hh;
+        qdd(i) = save;
+    end
+    save = Fc;
+    Fc = Fc + hh;
+    fh = rowerdynamics(q,qd,qdd,Fc,model.parameters);
+    df_dFc_num(:,1) = (fh - f)/hh;
+    Fc = save;
+	fprintf('Max. error in df_dq: ');       matcompare(df_dq, df_dq_num);
+	fprintf('Max. error in df_dqd: ');      matcompare(df_dqd, df_dqd_num);
+ 	fprintf('Max. error in df_dqdd: ');     matcompare(df_dqdd, df_dqdd_num);
+ 	fprintf('Max. error in df_dFc: ');      matcompare(df_dFc, df_dFc_num);
+ 	fprintf('Max. error in dL_dq: ');       matcompare(dL_dq, dL_dq_num);
+ 	fprintf('Max. error in dLdot_dq: ');	matcompare(dLdot_dq, dLdot_dq_num);
+    keyboard
 	
     % choose a suitable initial condition: realistic joint angles, and choose flywheel position y(1)
     % to be equal to the L that comes from these joint angles
@@ -86,4 +176,16 @@ function f =  dyn(t,y, ydot)
     end
     
 end
-%=======================================================================
+%====================================================================
+    function matcompare(a,b)
+	% compares two matrices and prints element that has greatest difference
+    if (size(a,1) == 1)
+        irow = 1;
+        [maxerr,icol] = max(abs(a-b));
+    else
+        [maxerr,irow] = max(abs(a-b));
+        [maxerr,icol] = max(maxerr);
+        irow = irow(icol);
+    end
+	fprintf('%9.6f at %d %d (%9.6f vs. %9.6f)\n', full(maxerr), irow, icol, full(a(irow,icol)), full(b(irow,icol)));
+    end

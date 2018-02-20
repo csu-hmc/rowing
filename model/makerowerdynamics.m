@@ -99,7 +99,7 @@ function makerowerdynamics
 	fprintf(fid2,'    df_dq = sparse(df_dq);\n');
 	fprintf(fid2,'    df_dqd = sparse(df_dqd);\n');
 	fprintf(fid2,'    df_dqdd = sparse(df_dqdd);\n');
-	fprintf(fid2,'    df_dFc = sparse(df_dFc);\n');
+	fprintf(fid2,'    df_dFc = transpose(sparse(df_dFc));\n');
 	fprintf(fid2,'\nend \n');
 	fclose(fid2);
 
