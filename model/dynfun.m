@@ -18,7 +18,7 @@
 
     % initialize the matrices
     f = zeros(13,1);    
-    dfdx = spalloc(13,13,75);
+    dfdx = spalloc(13,13,74); % number of non-zero elements can be determint by using a breakpoint at the end of dynfun.m and then use nnz(dfdx)
     dfdxdot = spalloc(13,13,32);
     dfdu = spalloc(13,5,5);
     
@@ -62,7 +62,7 @@
     F = Kcrm * (L - x(1)) + Bcrm * (Ldot - x(7));
     
     % a nonlinear transformation to change negative forces to zero
-    epsilon = 0.000001;
+    epsilon = 0.01;
     Fcrm = (F + sqrt(F^2 + epsilon^2) )/2;
     dFcrm_dF = (1 + F/sqrt(F^2 + epsilon^2))/2; 
 

@@ -1,5 +1,6 @@
 function [q,t2,p] = bodyangles
     % better fucntion name the part that produce p and q
+    global problem
     
     % load X2016_03_17_trial2_markers
     load('../data/Mdata2');
@@ -69,43 +70,50 @@ function [q,t2,p] = bodyangles
     legend('q1','q2','q3','q4','q5');
     set(gcf,'renderer','painters');
 
-    % determine model parameters
-    p.ShankLen = mean(sqrt((kneeY-ankleY).^2+(kneeZ-ankleZ).^2));
-    p.ThighLen = mean(sqrt((hipY-kneeY).^2+(hipZ-kneeZ).^2));
-    p.TrunkLen = mean(sqrt((shoulderY-hipY).^2+(shoulderZ-hipZ).^2));
-    p.UpparmLen = mean(sqrt((elbowY-shoulderY).^2+(elbowZ-shoulderZ).^2));
-    p.ForearmLen = mean(sqrt((wristY-elbowY).^2+(wristZ-elbowZ).^2));
-    
     % calculate the coordinate of ankle point, and assume it is fixed
     p.Xankle = mean(ankleZ);
     p.Yankle = mean(ankleY);
-    
+     
     % do the linear polyfit of hip motion track for the alpha angle
     coeff = polyfit(hipZ,hipY,1);
     p.a=coeff(1,1);
     p.b=coeff(1,2); %FIT A STAIGHT LINE THROUGH A LINEAR REGRETION
     
-    % define scale factor to convert kg to Mg and N to kN
-    scale = 0.001;
-	p.M                = scale * 80;				    % body mass (kg)
-      
     % determins sprocket position based on the most forward position of the
     % wrist (IN FUTURE WORK WE NEED A MARKER)
     %i = find(max(wristZ));
     [p.Xsprocket,i] = max(wristZ);
     p.Xsprocket = max(wristZ) + 0.1;
 	p.Ysprocket     = wristY(i);                       
-                 
-	% These are model parameters
+    
+  % determine model parameters
+    p.ShankLen = mean(sqrt((kneeY-ankleY).^2+(kneeZ-ankleZ).^2));
+    p.ThighLen = mean(sqrt((hipY-kneeY).^2+(hipZ-kneeZ).^2));
+    p.TrunkLen = mean(sqrt((shoulderY-hipY).^2+(shoulderZ-hipZ).^2));
+    p.UpparmLen = mean(sqrt((elbowY-shoulderY).^2+(elbowZ-shoulderZ).^2));
+    p.ForearmLen = mean(sqrt((wristY-elbowY).^2+(wristZ-elbowZ).^2));
+    
+    % define scale factor to convert kg to Mg and N to kN
+    scale = 0.001;
+	p.M                = scale * 80;				    % body mass (kg)	
+
+    % These are model parameters
     p.g          = 9.80665;                     % gravity(N/kg)
-	p.Kseat          =  scale * 10^5;           % seat stiffness (kN/m)
-	p.Cseat          =  2*sqrt(p.M*p.Kseat);    % seat damping (kNs/m), close to critical damping
+	p.Kseat          =  10^5;                        % seat stiffness (kN/m)
+	p.Cseat          =  2*sqrt(p.M*p.Kseat);        % seat damping (kNs/m), close to critical damping
     
     % rowing machine parameters from parameter identification
     p.C = scale * 89.68;             % flywheel damping coefficient kN/(m/s)^2
-	p.m = scale * 539.6;             % flywheel equivalent mass
-  	p.Kcrm = scale * 28386;          % stiffness of ratchet mechanism (kN/m)
-  	p.Bcrm = scale * 0;              % damping of ratchet mechanism (kNs/m)
+    p.m = scale * 539.6;             % flywheel equivalent mass
+    if strcmp(problem.component,'spring')
+        p.Kcrm = scale * 28386;          % stiffness of cable and ratchet mechanism (kN/m) (CHECK VALUE IN PARAMETER IDENTIFICATION
+        p.Bcrm = scale * 0;
+    elseif strcmp(problem.component,'damper')
+        p.Bcrm = scale * 2700;              % damping of ratchet mechanism (kNs/m)
+        p.Kcrm = scale * 0; 
+    else
+        warning('Please especify the proper component (spring/damper)');
+    end
     p.K =  scale * 12.97 ;			 % shock cord stiffness (kN/m)
     p.L0 = 0.2;                      % the wrist-sprocket distance at which shock cord has no force
     
@@ -124,7 +132,8 @@ function [q,t2,p] = bodyangles
 	p.ThighCM          =  (1-0.433)*p.ThighLen;               
 	p.TrunkCM          =  (1-0.500)*p.TrunkLen;                 
 	p.UpparmCM         =  0.436*p.UpparmLen;                   
-	p.ForearmCM        =  0.430*p.ForearmLen;                    
+	p.ForearmCM        =  0.430*p.ForearmLen;   
+    
     %q = [q1,q2,q3,q4,q5];						    % extract joint angle trajectories (states 1-5)
     %figure(9);
     %animate(q,p);
