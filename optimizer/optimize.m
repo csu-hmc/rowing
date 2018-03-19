@@ -95,8 +95,10 @@ function result = optimize(problem)
    u_ub =  [700 ;700 ;700 ;700 ;700]/1000;
   
    if isfield(model,'task')   
-       p_lb = 0.5;
-       p_ub = 1.5;
+       p_lb = 0.1;
+       p_ub = 1.4;
+%        p_lb = 0.6;
+%        p_ub = 1.6;
    end
    
    % make bounds for the trajectory optimization problem
@@ -146,7 +148,7 @@ function result = optimize(problem)
    
    % if oldresult was provided, use it as initial guess, otherwise use data as initial guess
    if isfield(problem,'initialguess')
-       if isfield(model,'task')
+       if isfield(model,'task') % if optimizing the time inwhich the cable length is in its max
            if ischar(problem.initialguess)
                if strcmp(problem.initialguess,'random')
                    X0 = [Simresult;1.052]+0.1*rand(model.Nvar,1);
@@ -170,7 +172,7 @@ function result = optimize(problem)
            end
        else
            
-           if ischar(problem.initialguess)
+           if ischar(problem.initialguess) % if tmax was not included in optimization
                if strcmp(problem.initialguess,'random')
                    X0 = [Simresult]+0.1*rand(model.Nvar,1);
                elseif strcmp(problem.initialguess,'zero')
@@ -261,7 +263,7 @@ function [f] = objfun(X)
 
     for i = 1:model.N-1
         u = X(iu);
-        f2 = f2 + mean(u.^2)*1000;        
+        f2 = f2 + mean(u.^2);        
         iu = iu + model.Nvarpernode;
     end
 %     iw = 8:12;
@@ -308,7 +310,7 @@ function [g] = objgrad(X)
         for i = 1:model.N-1
             u = X(iu);
             % f2 = f2 + mean(u.^2); 
-            g(iu) = g(iu) + model.Weffort * 2*u *1000;
+            g(iu) = g(iu) + model.Weffort * 2*u ;
             g(iu)=g(iu)/(model.N-1)/model.nu;
             %g(iu)=g(iu)/model.nu;
             iu = iu + model.Nvarpernode;
@@ -427,6 +429,7 @@ function [c] = confun(X)
 %     flywheel_pos2 = xi2(1);
 %     flywheel_pos = f*flywheel_pos1 + (1-f)*flywheel_pos2;
 %     c(end-model.ntask+3) = flywheel_pos - model.task.Lmax; % difference between maximum cable length and flwyheel position
+
     
 
 end
@@ -498,7 +501,9 @@ function [J] = conjac(X)
         
         %  task constraint for the max cable length
         tmax = X(end-model.npar+1);
-        i = find( min(diff(tmax > model.time)) == diff(tmax > model.time) );	% find the index of Model.time which is just less than tmax: Huawei 
+%         i = find( min(diff(tmax > model.time)) == diff(tmax > model.time) );	% find the index of Model.time which is just less than tmax: Huawei
+        i = find( -1 == diff(tmax > model.time) );	% find the index of Model.time which is just less than tmax: Huawei
+
         f = (tmax-model.time(i))/(model.time(i+1)-model.time(i)); %  
         xi1 =  X( (model.nx+model.nu)*(i-1) + (1:model.nx) ) ;		% the state x at node i
         [~,~,~,~,Li1,dLi1dt] = dynfun(xi1,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length first point 

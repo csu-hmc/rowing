@@ -103,18 +103,28 @@ function [q,t2,p] = bodyangles
 	p.Cseat          =  2*sqrt(p.M*p.Kseat);        % seat damping (kNs/m), close to critical damping
     
     % rowing machine parameters from parameter identification
-    p.C = scale * 89.68;             % flywheel damping coefficient kN/(m/s)^2
-    p.m = scale * 539.6;             % flywheel equivalent mass
+    p.C = scale * 92.7427;             % flywheel damping coefficient kN/(m/s)^2
+    p.m = scale * 557.6094;             % flywheel equivalent mass
     if strcmp(problem.component,'spring')
         p.Kcrm = scale * 28386;          % stiffness of cable and ratchet mechanism (kN/m) (CHECK VALUE IN PARAMETER IDENTIFICATION
         p.Bcrm = scale * 0;
     elseif strcmp(problem.component,'damper')
-        p.Bcrm = scale * 2700;              % damping of ratchet mechanism (kNs/m)
+        p.Bcrm = scale * 3111.8023;              % damping of ratchet mechanism (kNs/m)
         p.Kcrm = scale * 0; 
     else
         warning('Please especify the proper component (spring/damper)');
     end
-    p.K =  scale * 12.97 ;			 % shock cord stiffness (kN/m)
+    
+%     Estimated model parameters:
+% b1 =   0.0000 Ns/m		
+% c1 =  92.7427 Ns^2/m^2	
+% m1 = 557.6094 kg			
+% k  =   0.0000 N/m			
+% b2 = 3111.8023 Ns/m		
+% m2 =   0.0000 kg			
+% k2 =  14.0700 N/m			
+% epsilon =   0.0001
+    p.K =  scale * 14.07 ;			 % shock cord stiffness (kN/m)
     p.L0 = 0.2;                      % the wrist-sprocket distance at which shock cord has no force
     
 	% body segment parameters calculated using the tables from Winter's book
