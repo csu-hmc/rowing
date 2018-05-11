@@ -531,6 +531,7 @@ function [c] = confun(X)
         [~,~,~,~,Li1] = dynfun(xi1,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length first point
         xi2 =  X( (model.nx+model.nu)*i + (1:model.nx)) ;   % the state x at node i+1
         [~,~,~,~,Li2] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
+<<<<<<< HEAD
         
         Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
         c(model.ncondyn + model.ncontaskper + model.ncontaskcbl) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length
@@ -582,6 +583,20 @@ function [c] = confun(X)
                 end
             end
         end
+=======
+        Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
+        c(end-model.ntask+2) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length
+    end
+         
+%    %task constraint for the flywheel position (in case of using both costraint for flywheel position model.ntask=4
+%    %or if using just one of them model.ntask=3 )
+%     flywheel_pos1 = xi1(1);
+%     flywheel_pos2 = xi2(1);
+%     flywheel_pos = f*flywheel_pos1 + (1-f)*flywheel_pos2;
+%     c(end-model.ntask+3) = flywheel_pos - model.task.Lmax; % difference between maximum cable length and flwyheel position
+
+    
+>>>>>>> e109c3f2d5672b4b3050c1e1f35ca9f7162632ec
 
     end
              model.c=c;
@@ -674,12 +689,19 @@ function [J] = conjac(X)
         [~,~,~,~,Li1,dLi1dt] = dynfun(xi1,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length first point
         xi2 =  X( (model.nx+model.nu)*i + (1:model.nx)) ;   % the state x at node i+1
         [~,~,~,~,Li2,dLi2dt] = dynfun(xi2,zeros(model.nx,1),zeros(model.nu,1)); % find the max cable length second point
+<<<<<<< HEAD
         %         Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
         %         c(end-model.ntask+2) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length
         
         J(model.ncondyn + model.ncontaskper + model.ncontaskcbl, (model.nx+model.nu)*(i-1) + (2:6)) = (1-f)* dLi1dt ;
         J(model.ncondyn + model.ncontaskper + model.ncontaskcbl , (model.nx+model.nu)*i + (2:6)) = f*dLi2dt;
         dLtmaxdf = -Li1 + Li2;
+=======
+        Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
+        J(end-model.ntask+2 , (model.nx+model.nu)*(i-1) + (2:6)) = f* dLi1dt ;
+        J(end-model.ntask+2 , (model.nx+model.nu)*i + (2:6)) = (1-f)*dLi2dt;
+        dLtmaxdf = Li1 - Li2;
+>>>>>>> e109c3f2d5672b4b3050c1e1f35ca9f7162632ec
         dfdtmax = 1/(model.time(i+1)-model.time(i));
         J(model.ncondyn + model.ncontaskper + model.ncontaskcbl, end) = dLtmaxdf*dfdtmax;
         
