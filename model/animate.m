@@ -29,7 +29,11 @@ function animate(q, par)
         y = x*par.a + par.b;
         plot(x,y,'LineWidth',2);
         axis('equal');
-        
+%         
+%         if i==37
+%             pause
+%         end
+%         
  % Write each frame to the file
         if i==1
             currFrame = getframe;
