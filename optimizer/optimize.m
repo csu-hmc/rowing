@@ -9,7 +9,7 @@ function result = optimize(problem)
 %   X..........(scalar) initial guess (default: zeros)
     
    global model 
-   load Simresult
+   load Simresult2
 
    [dSPACEdata, qdata, t, model.parameters] = datainterp2;
 
@@ -84,8 +84,8 @@ function result = optimize(problem)
 %    else
 %    model.cablecnst =  0;
 %    end
-   model.umax = [ 6.11,6.00,6.071,1.3557,1.1164]';
-  % model.umax = [ 1,1,1,1,1]';
+%    model.umax = [ 6.11,6.00,6.071,1.3557,1.1164]';
+  model.umax = [ 1,1,1,1,1]';
 
 
    
@@ -165,11 +165,11 @@ function result = optimize(problem)
    model.ncondyn = (N-1)* model.Nconpernode;
    % task constraints included periodicity and cable length and path constraints
    model.ncontaskper = model.nu + model.nper; % task : periodicty contraints
-   if isfield(problem,'task')
-       model.cablecnst = problem.cablecnst;
-   else
-       model.cablecnst =  0;
-   end
+%    if isfield(problem,'task')
+%        model.cablecnst = problem.cablecnst;
+%    else
+%        model.cablecnst =  0;
+%    end
 %    model.ncontaskcbl = problem.cablecnst; % task : cable constraints 
    if isfield(problem,'task')
        model.nconpath = problem.nconpath ;
@@ -196,8 +196,8 @@ function result = optimize(problem)
 %        load(problem.initialguess)%look at the contend of that
        if isfield(model,'task') % if optimizing the time inwhich the cable length is in its max
            if ischar(problem.initialguess)
-               %adjusting the data (Simresult) based on number of collocation nodes(N=result.model.N)
-               Simtemp = reshape(Simresult,18,70);
+               %adjusting the data (Simresult2) based on number of collocation nodes(N=result.model.N)
+               Simtemp = reshape(Simresult2,18,70);
                Simtemp=Simtemp';
                htemp = T/(70-1);    % time step for direct collocation with 70 nodes
                tdctemp = (0:htemp:T)';    % time points for direct collocation with 70 nodes
@@ -205,18 +205,18 @@ function result = optimize(problem)
                    Sim(:,j) = interp1(tdctemp,Simtemp(:,j),tdc);
                end
                Sim=Sim';
-               Simresult = Sim(:);
+               Simresult2 = Sim(:);
 %                
 
                if strcmp(problem.initialguess,'random')
-                   X0 = [Simresult;1.052]+0.1*rand(model.Nvar,1);
+                   X0 = [Simresult2;1.052]+0.1*rand(model.Nvar,1);
                    %                  X0 = X_lb + (X_ub - X_lb).*rand(model.Nvar,1);
                elseif strcmp(problem.initialguess,'zero')
                    X0 = zeros(1261,1);
                elseif strcmp(problem.initialguess,'midpoint')
                    X0 = (X_lb + X_ub)/2;
                else
-                   X0 = [Simresult;1.052];
+                   X0 = [Simresult2;1.0809];
                    %                  ix = 1:model.nx;
                    %                  for i = 1:model.N-1
                    %                      iy = ix(model.itrack);
@@ -238,7 +238,7 @@ function result = optimize(problem)
                elseif strcmp(problem.initialguess,'midpoint')
                    X0 = (X_lb + X_ub)/2;
                else
-                   X0 = [Simresult];
+                   X0 = [Simresult2];
                    
                end
                
@@ -281,12 +281,12 @@ function result = optimize(problem)
    if model.nconpath>0
        
 %        options.cu(model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1:model.nconpath) )  = 1.5*model.cgain;
-%        options.cl(model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1:model.nconpath))  = 0.6*model.cgain;
+%        options.cl(model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1:model.nconpath))  = 0.78*model.cgain;
        options.cu(model.ncondyn + model.ncontaskper + model.ncontaskcbl +(1) )  = 1.5*model.cgain;
-       options.cl(model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1))  = 0.78*model.cgain;
+       options.cl(model.ncondyn + model.ncontaskper + model.ncontaskcbl +(1))  = 0.78*model.cgain;
        if model.nconpath==2          
            options.cu(model.ncondyn + model.ncontaskper + model.ncontaskcbl +(2) )  = 1.5*model.cgain;
-           options.cl(model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 2))  = 0.78*model.cgain;
+           options.cl(model.ncondyn + model.ncontaskper + model.ncontaskcbl +(2))  = 0.78*model.cgain;
        end
        %        options.cu(model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1:model.nconpath) )  = model.cgain*[0.984587124166634,0.949239382211693,0.940856786460101,0.945733510058762,0.957084562150634,0.972721713834140,0.982509343643580,0.987816947672726,0.990539007860171,0.990227649806674,0.994967362720877,1.00263477046094,1.00334222046470,1.00144009367118,0.997344919254536,0.989714675158803,0.986123385439148,0.977004790375032,0.968045821421840,0.958646052162770,0.948193316336059,0.941418405647705,0.938910094583808,0.924573210865546,0.906861858588330,0.892478320365616,0.881124752664981,0.912010855669652,0.931751477873481,0.944534048076951,0.949628794333322,0.949838966830169,0.948059476679608,0.945912702743256,0.939938348258617,0.930775839376757,0.923109611948986,0.912706410950738,0.907525287589332,0.913178747383131,0.918094181330246,0.925448288060352,0.931908885377663,0.938841859848728,0.947657130474933,0.958560954984599,0.970764124781298,0.984569343535761,0.991153597130201,0.999707630343451,1.00771863848097,1.01451724929020,1.01957971015749,1.02292890754400,1.02408734776336,1.02335939940512,1.02101448675558,1.01703412767700,1.01073978538003,1.00238201602046,0.991859778375628,0.980683771690154,0.972870044715305,0.971611739892830,0.969269605275424,0.965862830792782,0.961891542922626,0.952998931433828,0.948379405406072,0.984587124166634]';
        %        options.cl(model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1:model.nconpath) )  = model.cgain*[0.984587124166634,0.949239382211693,0.940856786460101,0.945733510058762,0.957084562150634,0.972721713834140,0.982509343643580,0.987816947672726,0.990539007860171,0.990227649806674,0.994967362720877,1.00263477046094,1.00334222046470,1.00144009367118,0.997344919254536,0.989714675158803,0.986123385439148,0.977004790375032,0.968045821421840,0.958646052162770,0.948193316336059,0.941418405647705,0.938910094583808,0.924573210865546,0.906861858588330,0.892478320365616,0.881124752664981,0.912010855669652,0.931751477873481,0.944534048076951,0.949628794333322,0.949838966830169,0.948059476679608,0.945912702743256,0.939938348258617,0.930775839376757,0.923109611948986,0.912706410950738,0.907525287589332,0.913178747383131,0.918094181330246,0.925448288060352,0.931908885377663,0.938841859848728,0.947657130474933,0.958560954984599,0.970764124781298,0.984569343535761,0.991153597130201,0.999707630343451,1.00771863848097,1.01451724929020,1.01957971015749,1.02292890754400,1.02408734776336,1.02335939940512,1.02101448675558,1.01703412767700,1.01073978538003,1.00238201602046,0.991859778375628,0.980683771690154,0.972870044715305,0.971611739892830,0.969269605275424,0.965862830792782,0.961891542922626,0.952998931433828,0.948379405406072,0.984587124166634]';
@@ -463,12 +463,12 @@ function [c] = confun(X)
 	h = model.h;
     load('Cons.mat')
     c = zeros(model.Ncon,1);     % initialize the constraints
-   % c = a;     % initialize the constraints
+    c = Cons;     % initialize the constraints
 
     if  model.nconpath == 2
-%         c = [a;a(end)];
+         c = [Cons;Cons(end)];
 %         c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1)  = 0.8014;
-        c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2)  = 0.7866;
+%         c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2)  = 0.7866;
     end
     
     par.Yankle = 0.5182;
@@ -524,7 +524,7 @@ function [c] = confun(X)
         c(model.ncondyn + model.ncontaskper + 1) = L0 - model.task.Lmin;   % difference between final and initial cable length c(model.Ncon-1)
         
         
-              %  task constraint for the max cable length
+        %  task constraint for the max cable length
         tmax = X(end-model.npar+1);
         i = find(min(diff(tmax > model.time)) == diff(tmax > model.time));	% find the index of Model.time which is just less than tmax: Huawei
         f = (tmax-model.time(i))/(model.time(i+1)-model.time(i)); %
@@ -535,57 +535,56 @@ function [c] = confun(X)
         
         Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
         c(model.ncondyn + model.ncontaskper + model.ncontaskcbl) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length
-     
-           if model.nconpath>0
-%             for i = 1:model.N
-%             for i = 1:model.nconpath
-            for i = 38
-                
-                q1= X((model.nx+model.nu)*(i-1)+2);
-                q2= X((model.nx+model.nu)*(i-1)+3);
-                q3= X((model.nx+model.nu)*(i-1)+4);
-                q4= X((model.nx+model.nu)*(i-1)+5);
-                q5= X((model.nx+model.nu)*(i-1)+6);
-%                 q = [q1,q2,q3,q4,q5]';%trasnpose
-%                 %
-%                 qddot = zeros(5,1);
-%                 qdot = zeros(5,1);
-%                 
-%                 %           F(:,i) = X((model.nx+model.nu)*(i-1)+13);%zero for this also
-%                 F = 0;
-%                 
-%                 [~,~,~,~,~,~,~,~,stick] = rowerdynamics(q,qdot,qddot,F,model.parameters);
-%                 wrist(i) = stick (6,2)';%keep the wrist higher than a constant value(so we dont need to use hip)
-                %             wristXmine(i) = par.Yankle - par.ShankLen*sin(-q1(i)) +par.ThighLen*sin(q2(i)+q1(i))+...
-                %                 par.TrunkLen*sin(-q2(i)-q1(i)-q3(i))- par.UpparmLen*sin(-q2(i)-q1(i)-q3(i)-q4(i))+...
-                %                 par.ForearmLen*sin(+q2(i)+q1(i)+q3(i)+q4(i)+q5(i));
-                % calculate the vertical cordinate of the wrist
-                                c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1) = (par.Yankle + par.ShankLen*sin(pi-q1) -...
-                                    par.ThighLen*sin(q2-pi+q1)+...
-                                    par.TrunkLen*sin(-q2-q1-q3+2*pi)- par.UpparmLen*sin(-q2-q1-q3-q4+2*pi)+...
-                                    par.ForearmLen*sin(-2*pi+q2+q1+q3+q4+q5))*model.cgain;
-%                                 for j=model.N-35
-                
-                
-            end
+        
+        if model.nconpath>0
+            %             for i = 1:model.N
+            %             for i = 1:model.nconpath
+            i = 35;
+            
+            q1= X((model.nx+model.nu)*(i-1)+2);
+            q2= X((model.nx+model.nu)*(i-1)+3);
+            q3= X((model.nx+model.nu)*(i-1)+4);
+            q4= X((model.nx+model.nu)*(i-1)+5);
+            q5= X((model.nx+model.nu)*(i-1)+6);
+            %                 q = [q1,q2,q3,q4,q5]';%trasnpose
+            %                 %
+            %                 qddot = zeros(5,1);
+            %                 qdot = zeros(5,1);
+            %
+            %                 %           F(:,i) = X((model.nx+model.nu)*(i-1)+13);%zero for this also
+            %                 F = 0;
+            %
+            %                 [~,~,~,~,~,~,~,~,stick] = rowerdynamics(q,qdot,qddot,F,model.parameters);
+            %                 wrist(i) = stick (6,2)';%keep the wrist higher than a constant value(so we dont need to use hip)
+            %             wristXmine(i) = par.Yankle - par.ShankLen*sin(-q1(i)) +par.ThighLen*sin(q2(i)+q1(i))+...
+            %                 par.TrunkLen*sin(-q2(i)-q1(i)-q3(i))- par.UpparmLen*sin(-q2(i)-q1(i)-q3(i)-q4(i))+...
+            %                 par.ForearmLen*sin(+q2(i)+q1(i)+q3(i)+q4(i)+q5(i));
+            % calculate the vertical cordinate of the wrist
+            c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1) = (par.Yankle + par.ShankLen*sin(pi-q1) -...
+                par.ThighLen*sin(q2-pi+q1)+...
+                par.TrunkLen*sin(-q2-q1-q3+2*pi)-...
+                par.UpparmLen*sin(-q2-q1-q3-q4+2*pi)+...
+                par.ForearmLen*sin(-2*pi+q2+q1+q3+q4+q5))*model.cgain;            
+            
+            
             if model.nconpath==2
+                j = 36;
                 
-                for i = 38
-                    
-                    q1= X((model.nx+model.nu)*(i-1)+2);
-                    q2= X((model.nx+model.nu)*(i-1)+3);
-                    q3= X((model.nx+model.nu)*(i-1)+4);
-                    q4= X((model.nx+model.nu)*(i-1)+5);
-                    q5= X((model.nx+model.nu)*(i-1)+6);
-                    c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2) = (par.Yankle + par.ShankLen*sin(pi-q1) -...
-                        par.ThighLen*sin(q2-pi+q1)+...
-                        par.TrunkLen*sin(-q2-q1-q3+2*pi)- par.UpparmLen*sin(-q2-q1-q3-q4+2*pi)+...
-                        par.ForearmLen*sin(-2*pi+q2+q1+q3+q4+q5))*model.cgain;
-                end
+                q1= X((model.nx+model.nu)*(j-1)+2);
+                q2= X((model.nx+model.nu)*(j-1)+3);
+                q3= X((model.nx+model.nu)*(j-1)+4);
+                q4= X((model.nx+model.nu)*(j-1)+5);
+                q5= X((model.nx+model.nu)*(j-1)+6);
+                c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2) = (par.Yankle + par.ShankLen*sin(pi-q1) -...
+                    par.ThighLen*sin(q2-pi+q1)+...
+                    par.TrunkLen*sin(-q2-q1-q3+2*pi)- ...
+                    par.UpparmLen*sin(-q2-q1-q3-q4+2*pi)+...
+                    par.ForearmLen*sin(-2*pi+q2+q1+q3+q4+q5))*model.cgain;
+                
             end
         end
-        Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
-        c(end-model.ntask+2) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length
+        %         Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
+        %         c(end-model.ntask+2) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length
     end
          
 %    %task constraint for the flywheel position (in case of using both costraint for flywheel position model.ntask=4
@@ -594,11 +593,11 @@ function [c] = confun(X)
 %     flywheel_pos2 = xi2(1);
 %     flywheel_pos = f*flywheel_pos1 + (1-f)*flywheel_pos2;
 %     c(end-model.ntask+3) = flywheel_pos - model.task.Lmax; % difference between maximum cable length and flwyheel position
-
+             model.c=c;
+             plot(model.c)
    
     end
-%              model.c=c;
-%              plot(model.c)
+             
    
 %     a=c(917:model.Ncon);
 % plot(c,'r');hold on;plot(model.cl,'b');hold on;plot(model.cu,'g')
@@ -609,7 +608,16 @@ function [J] = conjac(X)
 	
     global model
 	h = model.h;
+%     c = zeros(model.Ncon,1);     % initialize the constraints
+    load('Cons.mat')
     c = zeros(model.Ncon,1);     % initialize the constraints
+    c = Cons;     % initialize the constraints
+
+    if  model.nconpath == 2
+         c = [Cons;Cons(end)];
+%         c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1)  = 0.8014;
+%         c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2)  = 0.7866;
+    end
     par.Yankle = 0.5182;
     par.ForearmLen = 0.2355;
     par.ShankLen = 0.4252;
@@ -674,8 +682,8 @@ function [J] = conjac(X)
         %  task constraint for the min cable length
         x0 = X(1:model.nx);
         [~,~,~,~,L0,dL0dq] = dynfun(x0,zeros(model.nx,1),zeros(model.nu,1)); % the cable length L only depends the body positions (q)
-        %     c(end-model.ntask+1) = L0 - model.task.Lmin;   % difference between initial cable length and the min cable length from the data
-        J(model.Ncon-model.ntask+1 , 2:6 ) =  dL0dq;  % L0 is a function of qs (2-6)
+        %     c((model.ncondyn + model.ncontaskper + 1) = L0 - model.task.Lmin;   % difference between initial cable length and the min cable length from the data
+        J(model.ncondyn + model.ncontaskper + 1 , 2:6 ) =  dL0dq;  % L0 is a function of qs (2-6)
         
         %  task constraint for the max cable length
         tmax = X(end-model.npar+1);
@@ -690,78 +698,85 @@ function [J] = conjac(X)
         %         Ltmax = (1-f)*Li1 + f*Li2 ;    % linear interpolation of two above nodes
         %         c(end-model.ntask+2) = Ltmax - model.task.Lmax;   % difference between maximum cable length from the previous simulation results and maximum cable length
         
-        J(model.Ncon-model.ntask+2 , (model.nx+model.nu)*(i-1) + (2:6)) = (1-f)* dLi1dt ;
-        J(model.Ncon-model.ntask+2 , (model.nx+model.nu)*i + (2:6)) = f*dLi2dt;
+        J(model.ncondyn + model.ncontaskper + model.ncontaskcbl, (model.nx+model.nu)*(i-1) + (2:6)) = (1-f)* dLi1dt ;
+        
+        J(model.ncondyn + model.ncontaskper + model.ncontaskcbl, (model.nx+model.nu)*i + (2:6)) = f*dLi2dt;
         dLtmaxdf = -Li1 + Li2;
         dfdtmax = 1/(model.time(i+1)-model.time(i));
-        J(model.Ncon-model.ntask+2, end) = dLtmaxdf*dfdtmax;
+        J(model.ncondyn + model.ncontaskper + model.ncontaskcbl, end) = dLtmaxdf*dfdtmax;
         
         
         if model.nconpath>0
-       
-%             for i = 1:model.nconpath
-            for i = 38
-
-                q1= X((model.nx+model.nu)*(i-1)+2);
-                q2= X((model.nx+model.nu)*(i-1)+3);
-                q3= X((model.nx+model.nu)*(i-1)+4);
-                q4= X((model.nx+model.nu)*(i-1)+5);
-                q5= X((model.nx+model.nu)*(i-1)+6);
-                
-                %     wristXmine(i) = par.Yankle + par.ShankLen*sin(pi-q1(i)) -par.ThighLen*sin(q2(i)-pi+q1(i))+...
-                %     par.TrunkLen*sin(-q2(i)-q1(i)-q3(i)+2*pi)- par.UpparmLen*sin(-q2(i)-q1(i)-q3(i)-q4(i)+2*pi)+...
-                %     par.ForearmLen*sin(-2*pi+q2(i)+q1(i)+q3(i)+q4(i)+q5(i));
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1 , (model.nx+model.nu)*(i-1) +2 ) =  (-par.ShankLen*cos(pi-q1)-...
-                    par.ThighLen*cos(q2+q1-pi)-...
-                    par.TrunkLen*cos(-q2-q1-q3)+...
-                    par.UpparmLen*cos(-q2-q1-q3-q4) +...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1  , (model.nx+model.nu)*(i-1) +3 ) = (-par.ThighLen*cos(q2+q1-pi)-...
-                    par.TrunkLen*cos(-q2-q1-q3)+ par.UpparmLen*cos(-q2-q1-q3-q4)+...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1 , (model.nx+model.nu)*(i-1) +4 ) = (-par.TrunkLen*cos(-q2-q1-q3)+...
-                    par.UpparmLen*cos(-q2-q1-q3-q4)+...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1, (model.nx+model.nu)*(i-1) +5 ) = (par.UpparmLen*cos(-q2-q1-q3-q4)+...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1, (model.nx+model.nu)*(i-1) +6 ) = (par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-            end
+            
+            %             for i = 1:model.nconpath
+            i = 35;
+            
+            q1= X((model.nx+model.nu)*(i-1)+2);
+            q2= X((model.nx+model.nu)*(i-1)+3);
+            q3= X((model.nx+model.nu)*(i-1)+4);
+            q4= X((model.nx+model.nu)*(i-1)+5);
+            q5= X((model.nx+model.nu)*(i-1)+6);
+            
+            %     wristXmine(i) = par.Yankle + par.ShankLen*sin(pi-q1(i)) -par.ThighLen*sin(q2(i)-pi+q1(i))+...
+            %     par.TrunkLen*sin(-q2(i)-q1(i)-q3(i)+2*pi)- par.UpparmLen*sin(-q2(i)-q1(i)-q3(i)-q4(i)+2*pi)+...
+            %     par.ForearmLen*sin(-2*pi+q2(i)+q1(i)+q3(i)+q4(i)+q5(i));
+            %                         c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2) = (par.Yankle + par.ShankLen*sin(pi-q1) -...
+            %                         par.ThighLen*sin(q2-pi+q1)+...
+            %                         par.TrunkLen*sin(-q2-q1-q3+2*pi)- par.UpparmLen*sin(-q2-q1-q3-q4+2*pi)+...
+            %                         par.ForearmLen*sin(-2*pi+q2+q1+q3+q4+q5))*model.cgain;
+            
+            J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1 , (model.nx+model.nu)*(i-1) +2 ) =  (-par.ShankLen*cos(pi-q1)-...
+                par.ThighLen*cos(q2+q1-pi)-...
+                par.TrunkLen*cos(-q2-q1-q3)+...
+                par.UpparmLen*cos(-q2-q1-q3-q4) +...
+                par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+            
+            J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1  , (model.nx+model.nu)*(i-1) +3 ) = (-par.ThighLen*cos(q2+q1-pi)-...
+                par.TrunkLen*cos(-q2-q1-q3)+ ...
+                par.UpparmLen*cos(-q2-q1-q3-q4)+...
+                par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+            
+            J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1 , (model.nx+model.nu)*(i-1) +4 ) = (-par.TrunkLen*cos(-q2-q1-q3)+...
+                par.UpparmLen*cos(-q2-q1-q3-q4)+...
+                par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+            
+            J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1, (model.nx+model.nu)*(i-1) +5 ) = (par.UpparmLen*cos(-q2-q1-q3-q4)+...
+                par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+            
+            J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+1, (model.nx+model.nu)*(i-1) +6 ) = (par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+            
             if model.nconpath==2
-            for i = 38
-
-                q1= X((model.nx+model.nu)*(i-1)+2);
-                q2= X((model.nx+model.nu)*(i-1)+3);
-                q3= X((model.nx+model.nu)*(i-1)+4);
-                q4= X((model.nx+model.nu)*(i-1)+5);
-                q5= X((model.nx+model.nu)*(i-1)+6);
-                
-                %     wristXmine(i) = par.Yankle + par.ShankLen*sin(pi-q1(i)) -par.ThighLen*sin(q2(i)-pi+q1(i))+...
-                %     par.TrunkLen*sin(-q2(i)-q1(i)-q3(i)+2*pi)- par.UpparmLen*sin(-q2(i)-q1(i)-q3(i)-q4(i)+2*pi)+...
-                %     par.ForearmLen*sin(-2*pi+q2(i)+q1(i)+q3(i)+q4(i)+q5(i));
-%                 model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1:i)
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2 , (model.nx+model.nu)*(i-1) +2 ) =  (-par.ShankLen*cos(pi-q1)-...
-                    par.ThighLen*cos(q2+q1-pi)-...
-                    par.TrunkLen*cos(-q2-q1-q3)+...
-                    par.UpparmLen*cos(-q2-q1-q3-q4) +...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2  , (model.nx+model.nu)*(i-1) +3 ) = (-par.ThighLen*cos(q2+q1-pi)-...
-                    par.TrunkLen*cos(-q2-q1-q3)+ par.UpparmLen*cos(-q2-q1-q3-q4)+...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2 , (model.nx+model.nu)*(i-1) +4 ) = (-par.TrunkLen*cos(-q2-q1-q3)+...
-                    par.UpparmLen*cos(-q2-q1-q3-q4)+...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2, (model.nx+model.nu)*(i-1) +5 ) = (par.UpparmLen*cos(-q2-q1-q3-q4)+...
-                    par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-                
-                J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2, (model.nx+model.nu)*(i-1) +6 ) = (par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
-            end
+                    j = 36;
+                    
+                    q1= X((model.nx+model.nu)*(j-1)+2);
+                    q2= X((model.nx+model.nu)*(j-1)+3);
+                    q3= X((model.nx+model.nu)*(j-1)+4);
+                    q4= X((model.nx+model.nu)*(j-1)+5);
+                    q5= X((model.nx+model.nu)*(j-1)+6);
+                    
+                    %     wristXmine(i) = par.Yankle + par.ShankLen*sin(pi-q1(i)) -par.ThighLen*sin(q2(i)-pi+q1(i))+...
+                    %     par.TrunkLen*sin(-q2(i)-q1(i)-q3(i)+2*pi)- par.UpparmLen*sin(-q2(i)-q1(i)-q3(i)-q4(i)+2*pi)+...
+                    %     par.ForearmLen*sin(-2*pi+q2(i)+q1(i)+q3(i)+q4(i)+q5(i));
+                    %                 model.ncondyn + model.ncontaskper + model.ncontaskcbl +( 1:i)
+                    J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2 , (model.nx+model.nu)*(j-1) +2 ) =  (-par.ShankLen*cos(pi-q1)-...
+                        par.ThighLen*cos(q2+q1-pi)-...
+                        par.TrunkLen*cos(-q2-q1-q3)+...
+                        par.UpparmLen*cos(-q2-q1-q3-q4) +...
+                        par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+                    
+                    J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2  , (model.nx+model.nu)*(j-1) +3 ) = (-par.ThighLen*cos(q2+q1-pi)-...
+                        par.TrunkLen*cos(-q2-q1-q3)+ par.UpparmLen*cos(-q2-q1-q3-q4)+...
+                        par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+                    
+                    J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2 , (model.nx+model.nu)*(j-1) +4 ) = (-par.TrunkLen*cos(-q2-q1-q3)+...
+                        par.UpparmLen*cos(-q2-q1-q3-q4)+...
+                        par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+                    
+                    J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2, (model.nx+model.nu)*(j-1) +5 ) = (par.UpparmLen*cos(-q2-q1-q3-q4)+...
+                        par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+                    
+                    J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+2, (model.nx+model.nu)*(j-1) +6 ) = (par.ForearmLen*cos(q2+q1+q3+q4+q5))*model.cgain;
+                    
             end
         end
     end

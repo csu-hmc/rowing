@@ -22,8 +22,7 @@ function main
         problem.task.Lmin = 0.2077;       % min and max of cable lenght from the data
         problem.task.Lmax =  1.1288;
         problem.cablecnst = 2; % number of constraints for task when doing predictive simulation (cable length) Lmin & Lmax
-        problem.nconpath  = 0; % Zwrist constraint (depends on the number of nodes can be varies between 0 and model.N)
-        problem.ntask = problem.nconpath + problem.cablecnst; % the total number of constraints       
+        problem.nconpath  = 2; % Zwrist constraint (depends on the number of nodes can be varies between 0 and model.N)
     else
         problem.ntask = 0;
     end
