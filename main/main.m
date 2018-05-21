@@ -22,7 +22,7 @@ function main
         problem.task.Lmin = 0.2077;       % min and max of cable lenght from the data
         problem.task.Lmax =  1.1288;
         problem.cablecnst = 2; % number of constraints for task when doing predictive simulation (cable length) Lmin & Lmax
-        problem.nconpath  = 2; % Zwrist constraint (depends on the number of nodes can be varies between 0 and model.N)
+        problem.nconpath  = 1; % Zwrist constraint (depends on the number of nodes can be varies between 0 and model.N)
     else
         problem.ntask = 0;
     end
@@ -31,8 +31,8 @@ function main
     problem.discretization = 'BE';  % Backward Euler(BE) or Midpoint Euler(ME) discretization
     problem.tracking = 3;           % if 1 tracking the angles only else track all states (but flywheel velocity)
     % objective function gains (Wtrack=1 for the tracking  and Weffort=1 for predictive simulation) 
-    problem.Wtrack =1;
-    problem.Weffort =0;
+    problem.Wtrack =0;
+    problem.Weffort =1;
     result = optimize(problem);
     save 'rowingtest' result
 end

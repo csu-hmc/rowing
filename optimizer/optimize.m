@@ -84,8 +84,8 @@ function result = optimize(problem)
 %    else
 %    model.cablecnst =  0;
 %    end
-%    model.umax = [ 6.11,6.00,6.071,1.3557,1.1164]';
-  model.umax = [ 1,1,1,1,1]';
+   model.umax = [ 6.11,6.00,6.071,1.3557,1.1164]';
+%   model.umax = [ 1,1,1,1,1]';
 
 
    
@@ -119,7 +119,7 @@ function result = optimize(problem)
        
   
    if isfield(model,'task')   
-       p_lb = 1;
+       p_lb = 0.5;
        p_ub = 1.4;
 %        p_lb = 1;
 %        p_ub = 1;
@@ -463,7 +463,7 @@ function [c] = confun(X)
 	h = model.h;
     load('Cons.mat')
     c = zeros(model.Ncon,1);     % initialize the constraints
-    c = Cons;     % initialize the constraints
+%     c = Cons;     % initialize the constraints
 
     if  model.nconpath == 2
          c = [Cons;Cons(end)];
@@ -593,8 +593,21 @@ function [c] = confun(X)
 %     flywheel_pos2 = xi2(1);
 %     flywheel_pos = f*flywheel_pos1 + (1-f)*flywheel_pos2;
 %     c(end-model.ntask+3) = flywheel_pos - model.task.Lmax; % difference between maximum cable length and flwyheel position
+
+             
+%               ivel =
+%               7:model.nx+model.nu:(model.N-1)*(model.nx+model.nu)+7;
+%               %nvarpernode
+%               iF = 13:model.nx+model.nu:(model.N-1)*(model.nx+model.nu)+13;
+%               V_fw = X(ivel);
+%               F = X(iF);
+%               c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+model.nconpath+1) = sum(V_fw .* F) / (model.N-1) - model.REQPOWER;
+               
              model.c=c;
              plot(model.c)
+              
+
+       
    
     end
              
@@ -781,7 +794,18 @@ function [J] = conjac(X)
         end
     end
     
-        
+%               ivel = 7:model.nx+model.nu:(model.N-1)*(model.nx+model.nu)+7;
+%               iF = 13:model.nx+model.nu:(model.N-1)*(model.nx+model.nu)+13;
+%               V_fw = X(ivel);
+%               F = X(iF);
+%               c(model.ncondyn + model.ncontaskper + model.ncontaskcbl+model.nconpath+1) = sum(V_fw .* F) /(model.N-1) - model.REQPOWER;
+%               
+%               for i=1:model.N-1
+% 
+%                    J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+model.nconpath+1, ivel(i)) = F(i)/(model.N-1);
+%                    J(model.ncondyn + model.ncontaskper + model.ncontaskcbl+model.nconpath+1, iF(i)) = V_fw(i)/(model.N-1);
+%               end
+   
 
 
 end

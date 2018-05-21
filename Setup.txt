@@ -1,0 +1,9 @@
+In order to perform the optimization code the "main.m" should be ran
+
+-"problem.nconpath" represent the number of path constraints (currently = 1).  
+-"optimize.m" is coded in a way that it can be increased to 2 also
+-To start it is better to set problem.Wtrack =1 while problem.Weffort =0.
+ The reason is we are sure that the constaraints are satisfied in tracking
+ problem. In addition, when using only tracking, the optimization should 
+ be solved within few iterations
+ -The rest can be the way they are.
