@@ -18,6 +18,7 @@ function main
     problem.np =1;                 % on/off switch for constraints
     problem.N = 70;		        % number of collocation points
 %     problem.N = 50;		 	         % used for derivetive checking
+    problem.Reqpower = 0.0976;
     if problem.np == 1
         problem.task.Lmin = 0.2077;       % min and max of cable lenght from the data
         problem.task.Lmax =  1.1288;
@@ -27,12 +28,12 @@ function main
         problem.ntask = 0;
     end
 
-    problem.component = 'spring';   % choose if we want to use damper or spring
+    problem.component = 'damper';   % choose if we want to use damper or spring
     problem.discretization = 'BE';  % Backward Euler(BE) or Midpoint Euler(ME) discretization
     problem.tracking = 3;           % if 1 tracking the angles only else track all states (but flywheel velocity)
     % objective function gains (Wtrack=1 for the tracking  and Weffort=1 for predictive simulation) 
-    problem.Wtrack =0;
-    problem.Weffort =1;
+    problem.Wtrack =1;
+    problem.Weffort =0;
     result = optimize(problem);
     save 'rowingtest' result
 end
