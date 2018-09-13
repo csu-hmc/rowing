@@ -91,7 +91,54 @@ function result = optimize(problem)
 %   model.umax = [ 1,1,1,1,1]';
 
 
+%        % muscle parameters
+%     model.L          = 0.60;        % Length of forearm + hand(m)
+%     model.d          = 0.052;       % Moment arm at elbow(m) at 90 degrees
+%     model.Tact       = 10e-3;       % Activation time(s)
+%     model.Tdeact     = 40e-3;       % Deactivation time(s)
+%     model.Fmax       = 495;         % strength of biceps (N)
+%     model.Lm0        = 0.288;       % Muscle-tendon length at 90 deg elbow angle (m)  
+%     
+%     % muscle properties of the biceps brachii
+% 	model.Fmax      = 495;          % (N) maximal isometric force (sum of both parts of the muscle)
+% 	model.umax      = 0.033;        % (dimensionless) strain in the series elastic element at load of Fmax
+% 	model.W         = 0.63;         % (dimensionless) width parameter of the force-length relationship of the contractile element
+% 	model.AHill     = 0.25;         % (dimensionless) Hill parameter of the force-velocity relationship
+% 	model.FVmax     = 1.5;          % (dimensionless) maximal eccentric force
+% 	model.Lceopt    = 0.1106;       % (m) optimal CE length (MUST BE AVERAGE OF THE TWO PARTS OF THE BICEPS)
+% 	model.b         = 0.01;         % (s/m) damping coefficient of damper parallel to the CE (normalized to Fmax)
+%    	model.SEELslack = 0.192;        % (m) slack length of the series elastic element
+%     model.PEELslack = 1;            % (dimensionless) slack length of the parallel elastic element, divided by Lceopt
 
+%     % constants derived from the muscle properties
+% 	model.Vmax  = 10*model.Lceopt;                                         % Maximum shortening velocity (m/s) is 10 fiber lengths per sec
+% 	model.d1	= model.Vmax*model.AHill*(model.FVmax-1)/(model.AHill+1);  % parameter in the eccentric force-velocity equation
+% 
+%     % constant force which is always exists in both phases to balance out
+%     % the muscle constant force (even if the amplitude is zero, muscle generates force)
+%     model.constantforce = 10;       % (N) constant force added to k2
+% 
+%     % Since the model parameters are obtained from parameters
+%     % identification of a Concep-2 rowing machine, they have to be scaled
+%     % down to use in this model
+%     % So the model parameters should be multiplied by scale factor
+%     
+%     % the force scale factor(SF) = maximal pull force based on biceps
+%     % muscle strength / maximal force from Kleshnev paper
+%     % maximum force in Kleshnev data is 800 N
+%     FSF = ((model.d/model.L)*model.Fmax)/(800);     % force scale factor
+%     
+%     % The displacement scale factor(SD) = amplitude / maximum displacement
+%     % in Kleshnev test
+%     % maximum displacement in Kleshnev data is 1.35 m
+%     DSF = 0.4/(1.35);         % distance scale factor
+%     
+%     % Scale Factor = force scale factor/distance scale factor
+%     SF = FSF/DSF;
+%     
+%     % So stiffness parameters, linear damping stiffness and masses should
+%     % be multiplied by (SF)
+%     % The quadratic damping parameter should be multiplied by (FSF/DSF^2)
 %    
    % define the state variables x, controls u, and their bounds
    % x = [x_fw, q1 ...q5, v_fw, qd1...qd5, F(kn)]
@@ -601,7 +648,7 @@ function [c] = confun(X)
 %     flywheel_pos = f*flywheel_pos1 + (1-f)*flywheel_pos2;
 %     c(end-model.ntask+3) = flywheel_pos - model.task.Lmax; % difference between maximum cable length and flwyheel position
 
-        if model.Reqpower>0
+        if isfield(model,'Reqpower') 
          
               ivel =7:model.nx+model.nu:(model.N-2)*(model.nx+model.nu)+7;
               %nvarpernode
@@ -800,7 +847,8 @@ function [J] = conjac(X)
             end
         end
     end
-    if model.Reqpower>0
+    if isfield(model,'Reqpower') 
+
               ivel = 7:model.nx+model.nu:(model.N-2)*(model.nx+model.nu)+7;
               iF = 13:model.nx+model.nu:(model.N-2)*(model.nx+model.nu)+13;
               V_fw = X(ivel);
